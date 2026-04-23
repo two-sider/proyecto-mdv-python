@@ -52,4 +52,8 @@ python -m PyInstaller --name TaskFlowMDV --windowed --onefile -m src.main
 
 El binario quedara en `dist/`.
 
+## Control de versiones
+
+El historial funcional y la numeracion de versiones se documentan en `VERSIONES.md`.
+
 La documentacion detallada esta en la carpeta `docs/` y en los `README.md` internos de cada modulo.
