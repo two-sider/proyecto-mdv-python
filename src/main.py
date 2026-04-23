@@ -1,4 +1,5 @@
 import logging
+import sys
 from pathlib import Path
 
 from src.data.task_repository import TaskRepository
@@ -6,13 +7,19 @@ from src.logging_config import configure_logging
 from src.view.task_manager_view import TaskManagerView
 
 
+def get_runtime_root() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parent.parent
+
+
 def build_storage_path() -> Path:
-    project_root = Path(__file__).resolve().parent.parent
+    project_root = get_runtime_root()
     return project_root / "storage" / "tasks.json"
 
 
 def build_log_path() -> Path:
-    project_root = Path(__file__).resolve().parent.parent
+    project_root = get_runtime_root()
     return project_root / "logs" / "taskflow.log"
 
 
