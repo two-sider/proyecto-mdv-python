@@ -4,8 +4,8 @@ Esta capa interactua con el usuario.
 
 ## Archivo principal
 
-- `console_view.py`: muestra el menu, captura entradas y presenta resultados.
+- `task_manager_view.py`: crea una interfaz grafica con `tkinter` para gestionar tareas, editarlas, ver alertas de vencimiento y aplicar filtros.
 
 ## Responsabilidad
 
-La vista no decide como se guardan los datos. Solo solicita acciones al repositorio y comunica el resultado.
+La vista no decide como se guardan los datos. Solo solicita acciones al repositorio y comunica el resultado mediante una ventana de escritorio.

@@ -15,21 +15,34 @@ class TaskRepository:
         raw_tasks = self._read()
         return [Task.from_dict(item) for item in raw_tasks]
 
-    def add_task(self, title: str) -> Task:
+    def add_task(
+        self,
+        title: str,
+        priority: str = "Media",
+        due_date: str = "",
+    ) -> Task:
         tasks = self.list_tasks()
         next_id = max((task.task_id for task in tasks), default=0) + 1
-        new_task = Task(task_id=next_id, title=title.strip())
+        new_task = Task(
+            task_id=next_id,
+            title=title.strip(),
+            priority=priority.strip() or "Media",
+            due_date=due_date.strip(),
+        )
         tasks.append(new_task)
         self._write([task.to_dict() for task in tasks])
         return new_task
 
     def complete_task(self, task_id: int) -> bool:
+        return self.set_task_completed(task_id, True)
+
+    def set_task_completed(self, task_id: int, completed: bool) -> bool:
         tasks = self.list_tasks()
         updated = False
 
         for task in tasks:
             if task.task_id == task_id:
-                task.completed = True
+                task.completed = completed
                 updated = True
                 break
 
@@ -37,6 +50,45 @@ class TaskRepository:
             self._write([task.to_dict() for task in tasks])
 
         return updated
+
+    def update_task(
+        self,
+        task_id: int,
+        title: str,
+        priority: str,
+        due_date: str,
+    ) -> bool:
+        tasks = self.list_tasks()
+        updated = False
+
+        for task in tasks:
+            if task.task_id == task_id:
+                task.title = title.strip()
+                task.priority = priority.strip() or "Media"
+                task.due_date = due_date.strip()
+                updated = True
+                break
+
+        if updated:
+            self._write([task.to_dict() for task in tasks])
+
+        return updated
+
+    def delete_task(self, task_id: int) -> bool:
+        tasks = self.list_tasks()
+        remaining_tasks = [task for task in tasks if task.task_id != task_id]
+        deleted = len(remaining_tasks) != len(tasks)
+
+        if deleted:
+            self._write([task.to_dict() for task in remaining_tasks])
+
+        return deleted
+
+    def find_task(self, task_id: int) -> Task | None:
+        for task in self.list_tasks():
+            if task.task_id == task_id:
+                return task
+        return None
 
     def _read(self) -> list[dict]:
         with self.storage_path.open("r", encoding="utf-8") as file:

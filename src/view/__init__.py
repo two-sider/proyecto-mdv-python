@@ -1,3 +1,3 @@
-from .console_view import ConsoleView
+from .task_manager_view import TaskManagerView
 
-__all__ = ["ConsoleView"]
+__all__ = ["TaskManagerView"]

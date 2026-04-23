@@ -1,1 +1,23 @@
-[]
+[
+  {
+    "task_id": 1,
+    "title": "Primera tarea",
+    "completed": true,
+    "priority": "Media",
+    "due_date": ""
+  },
+  {
+    "task_id": 2,
+    "title": "Limpiar cocina",
+    "completed": false,
+    "priority": "Alta",
+    "due_date": ""
+  },
+  {
+    "task_id": 3,
+    "title": "escuchar musica",
+    "completed": false,
+    "priority": "Alta",
+    "due_date": "2026-04-30"
+  }
+]

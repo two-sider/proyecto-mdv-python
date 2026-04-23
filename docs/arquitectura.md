@@ -9,14 +9,20 @@ Contiene las entidades del dominio. En este caso, una tarea con:
 - identificador
 - titulo
 - estado de completado
+- prioridad
+- fecha de vencimiento opcional
 
 ## Datos
 
-Gestiona la lectura y escritura en `storage/tasks.json`.
+Gestiona la lectura y escritura en `storage/tasks.json`, incluyendo el estado, prioridad y fecha de cada tarea.
 
 ## Vista
 
-Presenta un menu de consola, recoge entradas del usuario y muestra resultados.
+Presenta una interfaz grafica de escritorio, recoge acciones del usuario y muestra resultados en tiempo real.
+
+## Observabilidad
+
+La aplicacion registra eventos y errores en `logs/taskflow.log` para facilitar revision de fallos y seguimiento basico de uso.
 
 ## Beneficio
 
