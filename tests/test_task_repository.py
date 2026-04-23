@@ -6,12 +6,18 @@ from src.data.task_repository import TaskRepository
 def test_add_and_complete_task(tmp_path: Path) -> None:
     repository = TaskRepository(tmp_path / "tasks.json")
 
-    task = repository.add_task("Preparar documentacion", priority="Alta", due_date="2026-04-30")
+    task = repository.add_task(
+        "Preparar documentacion",
+        priority="Alta",
+        due_date="2026-04-30",
+        notes="Preparar resumen del avance",
+    )
     assert task.task_id == 1
     assert task.title == "Preparar documentacion"
     assert task.completed is False
     assert task.priority == "Alta"
     assert task.due_date == "2026-04-30"
+    assert task.notes == "Preparar resumen del avance"
 
     assert repository.complete_task(1) is True
 
@@ -50,6 +56,7 @@ def test_update_task_changes_main_fields(tmp_path: Path) -> None:
         title="Actualizada",
         priority="Alta",
         due_date="2026-05-10",
+        notes="Ahora con detalle ampliado",
     ) is True
 
     updated = repository.find_task(task.task_id)
@@ -57,3 +64,4 @@ def test_update_task_changes_main_fields(tmp_path: Path) -> None:
     assert updated.title == "Actualizada"
     assert updated.priority == "Alta"
     assert updated.due_date == "2026-05-10"
+    assert updated.notes == "Ahora con detalle ampliado"

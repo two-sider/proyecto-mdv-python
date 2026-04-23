@@ -20,6 +20,7 @@ class TaskRepository:
         title: str,
         priority: str = "Media",
         due_date: str = "",
+        notes: str = "",
     ) -> Task:
         tasks = self.list_tasks()
         next_id = max((task.task_id for task in tasks), default=0) + 1
@@ -28,6 +29,7 @@ class TaskRepository:
             title=title.strip(),
             priority=priority.strip() or "Media",
             due_date=due_date.strip(),
+            notes=notes.strip(),
         )
         tasks.append(new_task)
         self._write([task.to_dict() for task in tasks])
@@ -57,6 +59,7 @@ class TaskRepository:
         title: str,
         priority: str,
         due_date: str,
+        notes: str,
     ) -> bool:
         tasks = self.list_tasks()
         updated = False
@@ -66,6 +69,7 @@ class TaskRepository:
                 task.title = title.strip()
                 task.priority = priority.strip() or "Media"
                 task.due_date = due_date.strip()
+                task.notes = notes.strip()
                 updated = True
                 break
 

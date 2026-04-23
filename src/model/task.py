@@ -8,6 +8,7 @@ class Task:
     completed: bool = False
     priority: str = "Media"
     due_date: str = ""
+    notes: str = ""
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -20,4 +21,5 @@ class Task:
             completed=bool(data.get("completed", False)),
             priority=str(data.get("priority", "Media")),
             due_date=str(data.get("due_date", "")),
+            notes=str(data.get("notes", "")),
         )

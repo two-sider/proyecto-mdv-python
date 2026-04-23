@@ -11,14 +11,16 @@ Contiene las entidades del dominio. En este caso, una tarea con:
 - estado de completado
 - prioridad
 - fecha de vencimiento opcional
+- notas opcionales
 
 ## Datos
 
-Gestiona la lectura y escritura en `storage/tasks.json`, incluyendo el estado, prioridad y fecha de cada tarea.
+Gestiona la lectura y escritura en `storage/tasks.json`, incluyendo el estado, prioridad, fecha y notas de cada tarea.
 
 ## Vista
 
 Presenta una interfaz grafica de escritorio, recoge acciones del usuario y muestra resultados en tiempo real.
+Tambien aplica filtros, ordenamiento y alertas visuales en la tabla de tareas.
 
 ## Observabilidad
 

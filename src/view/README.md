@@ -4,7 +4,7 @@ Esta capa interactua con el usuario.
 
 ## Archivo principal
 
-- `task_manager_view.py`: crea una interfaz grafica con `tkinter` para gestionar tareas, editarlas, ver alertas de vencimiento, aplicar filtros y desplazarse en pantallas pequenas.
+- `task_manager_view.py`: crea una interfaz grafica con `tkinter` para gestionar tareas, editarlas, agregar notas, ordenar la tabla, ver alertas de vencimiento, aplicar filtros y desplazarse en pantallas pequenas.
 
 ## Responsabilidad
 

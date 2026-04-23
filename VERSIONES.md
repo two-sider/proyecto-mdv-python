@@ -12,9 +12,18 @@ Se usara el formato `MAJOR.MINOR.PATCH`.
 
 ## Version actual
 
-`0.1.0`
+`0.2.0`
 
 ## Historial
+
+### `0.2.0` - Gestion visual ampliada
+
+Incluye:
+
+- notas por tarea
+- ordenamiento por fecha de creacion, prioridad, vencimiento, estado y titulo
+- alertas visuales directamente en la tabla
+- mejoras de usabilidad para planificacion diaria
 
 ### `0.1.0` - Primer MVP visual
 

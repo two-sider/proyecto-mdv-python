@@ -23,12 +23,14 @@ class TaskManagerView:
         self.due_date_var = tk.StringVar()
         self.filter_var = tk.StringVar(value="Todas")
         self.search_var = tk.StringVar()
+        self.sort_var = tk.StringVar(value="Fecha de creacion")
         self.status_var = tk.StringVar(value="Sin seleccion. Crea o elige una tarea para ver su detalle.")
         self.detail_title_var = tk.StringVar(value="Sin tarea seleccionada")
         self.detail_priority_var = tk.StringVar(value="Prioridad: -")
         self.detail_due_date_var = tk.StringVar(value="Vence: -")
         self.detail_completion_var = tk.StringVar(value="Estado: -")
         self.detail_alert_var = tk.StringVar(value="Alerta: -")
+        self.detail_notes_var = tk.StringVar(value="Notas: -")
         self.summary_var = tk.StringVar()
         self.pending_var = tk.StringVar()
         self.completed_var = tk.StringVar()
@@ -159,7 +161,7 @@ class TaskManagerView:
 
         filter_frame = ttk.Frame(panel, style="Panel.TFrame")
         filter_frame.grid(row=1, column=0, sticky="ew", pady=(0, 12))
-        filter_frame.columnconfigure(1, weight=1)
+        filter_frame.columnconfigure(3, weight=1)
 
         ttk.Label(filter_frame, text="Filtro", style="Status.TLabel").grid(
             row=0, column=0, sticky="w", padx=(0, 10)
@@ -173,6 +175,15 @@ class TaskManagerView:
         filter_combo.grid(row=0, column=1, sticky="ew", padx=(0, 10))
         filter_combo.bind("<<ComboboxSelected>>", self._handle_filter_change)
 
+        sort_combo = ttk.Combobox(
+            filter_frame,
+            textvariable=self.sort_var,
+            values=("Fecha de creacion", "Prioridad", "Vencimiento", "Estado", "Titulo"),
+            state="readonly",
+        )
+        sort_combo.grid(row=0, column=2, sticky="ew", padx=(0, 10))
+        sort_combo.bind("<<ComboboxSelected>>", self._handle_filter_change)
+
         search_entry = tk.Entry(
             filter_frame,
             textvariable=self.search_var,
@@ -185,7 +196,7 @@ class TaskManagerView:
             highlightbackground="#d4c7b6",
             highlightcolor="#1f3c88",
         )
-        search_entry.grid(row=0, column=2, sticky="ew")
+        search_entry.grid(row=0, column=3, sticky="ew")
         search_entry.bind("<KeyRelease>", self._handle_filter_change)
 
         table_frame = ttk.Frame(panel, style="Panel.TFrame")
@@ -213,6 +224,11 @@ class TaskManagerView:
         self.tree.grid(row=0, column=0, sticky="nsew")
         self.tree.bind("<<TreeviewSelect>>", self._on_select_task)
         self.tree.bind("<Configure>", self._handle_tree_resize)
+        self.tree.tag_configure("overdue", background="#f8d7da", foreground="#6a1b1b")
+        self.tree.tag_configure("due_today", background="#ffe9b3", foreground="#6b4b00")
+        self.tree.tag_configure("due_soon", background="#fff4d6", foreground="#6b4b00")
+        self.tree.tag_configure("priority_high", background="#fbe4e6", foreground="#7f1d1d")
+        self.tree.tag_configure("completed", background="#e3f4e8", foreground="#1f5132")
 
         vertical_scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=self.tree.yview)
         vertical_scrollbar.grid(row=0, column=1, sticky="ns")
@@ -319,6 +335,24 @@ class TaskManagerView:
         )
         due_date_entry.grid(row=1, column=1, sticky="ew")
 
+        ttk.Label(panel, text="Notas", style="Status.TLabel").grid(
+            row=4, column=0, sticky="w", pady=(12, 6)
+        )
+        self.notes_text = tk.Text(
+            panel,
+            height=5,
+            font=("Segoe UI", 10),
+            relief="flat",
+            bg="#fffdf8",
+            fg="#1f1f1f",
+            insertbackground="#1f1f1f",
+            highlightthickness=1,
+            highlightbackground="#d4c7b6",
+            highlightcolor="#1f3c88",
+            wrap="word",
+        )
+        self.notes_text.grid(row=5, column=0, sticky="ew")
+
         add_button = tk.Button(
             panel,
             text="Guardar tarea",
@@ -333,102 +367,109 @@ class TaskManagerView:
             padx=12,
             pady=10,
         )
-        add_button.grid(row=4, column=0, sticky="ew", pady=(12, 20))
+        add_button.grid(row=6, column=0, sticky="ew", pady=(12, 20))
         self.save_button = add_button
 
-        ttk.Separator(panel, orient="horizontal").grid(row=5, column=0, sticky="ew", pady=6)
+        ttk.Separator(panel, orient="horizontal").grid(row=7, column=0, sticky="ew", pady=6)
 
         ttk.Label(panel, text="Acciones", style="Section.TLabel").grid(
-            row=6, column=0, sticky="w", pady=(8, 0)
+            row=8, column=0, sticky="w", pady=(8, 0)
         )
         ttk.Label(
             panel,
             text="Selecciona una tarea de la tabla para operar sobre ella.",
             style="Status.TLabel",
-        ).grid(row=7, column=0, sticky="w", pady=(4, 12))
+        ).grid(row=9, column=0, sticky="w", pady=(4, 12))
 
         self.edit_button = self._build_action_button(
             panel,
-            row=8,
+            row=10,
             text="Cargar para editar",
             background="#5b4abf",
             command=self._load_selected_task_for_edit,
         )
         self.complete_button = self._build_action_button(
             panel,
-            row=9,
+            row=11,
             text="Marcar como completada",
             background="#2d6a4f",
             command=self._complete_selected_task,
         )
         self.reopen_button = self._build_action_button(
             panel,
-            row=10,
+            row=12,
             text="Reabrir tarea",
             background="#9a6700",
             command=self._reopen_selected_task,
         )
         self.delete_button = self._build_action_button(
             panel,
-            row=11,
+            row=13,
             text="Eliminar tarea",
             background="#a63c3c",
             command=self._delete_selected_task,
         )
         self.cancel_edit_button = self._build_action_button(
             panel,
-            row=12,
+            row=14,
             text="Cancelar edicion",
             background="#6b7280",
             command=self._cancel_edit_mode,
         )
 
         ttk.Separator(panel, orient="horizontal").grid(
-            row=13, column=0, sticky="ew", pady=(18, 10)
+            row=15, column=0, sticky="ew", pady=(18, 10)
         )
-        ttk.Label(panel, text="Estado", style="Section.TLabel").grid(row=14, column=0, sticky="w")
+        ttk.Label(panel, text="Estado", style="Section.TLabel").grid(row=16, column=0, sticky="w")
         ttk.Label(
             panel,
             textvariable=self.detail_title_var,
             style="DetailTitle.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=15, column=0, sticky="w", pady=(8, 0))
+        ).grid(row=17, column=0, sticky="w", pady=(8, 0))
         ttk.Label(
             panel,
             textvariable=self.detail_priority_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=16, column=0, sticky="w", pady=(6, 0))
+        ).grid(row=18, column=0, sticky="w", pady=(6, 0))
         ttk.Label(
             panel,
             textvariable=self.detail_due_date_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=17, column=0, sticky="w", pady=(4, 0))
+        ).grid(row=19, column=0, sticky="w", pady=(4, 0))
         ttk.Label(
             panel,
             textvariable=self.detail_completion_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=18, column=0, sticky="w", pady=(4, 0))
+        ).grid(row=20, column=0, sticky="w", pady=(4, 0))
         ttk.Label(
             panel,
             textvariable=self.detail_alert_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=19, column=0, sticky="w", pady=(4, 0))
+        ).grid(row=21, column=0, sticky="w", pady=(4, 0))
+        ttk.Label(
+            panel,
+            textvariable=self.detail_notes_var,
+            style="Status.TLabel",
+            wraplength=280,
+            justify="left",
+        ).grid(row=22, column=0, sticky="w", pady=(4, 0))
         ttk.Label(
             panel,
             textvariable=self.status_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=20, column=0, sticky="w", pady=(12, 0))
+        ).grid(row=23, column=0, sticky="w", pady=(12, 0))
 
         self._set_action_state("disabled")
         self.cancel_edit_button.config(state="disabled")
@@ -487,11 +528,13 @@ class TaskManagerView:
         for task in tasks:
             status = "Completada" if task.completed else "Pendiente"
             due_date = task.due_date or "-"
+            tags = self._get_task_tags(task)
             self.tree.insert(
                 "",
                 "end",
                 iid=str(task.task_id),
                 values=(task.task_id, task.title, task.priority, due_date, status),
+                tags=tags,
             )
 
         all_tasks = self.repository.list_tasks()
@@ -511,6 +554,7 @@ class TaskManagerView:
 
     def _save_task(self) -> None:
         title = self.title_var.get().strip()
+        notes = self.notes_text.get("1.0", "end").strip()
         if not title:
             self.status_var.set("El titulo no puede quedar vacio.")
             return
@@ -525,6 +569,7 @@ class TaskManagerView:
                     title,
                     priority=self.priority_var.get(),
                     due_date=due_date,
+                    notes=notes,
                 )
                 self.logger.info("Tarea creada: id=%s titulo=%s", task.task_id, task.title)
                 self.status_var.set(f"Tarea #{task.task_id} creada correctamente.")
@@ -535,6 +580,7 @@ class TaskManagerView:
                     title=title,
                     priority=self.priority_var.get(),
                     due_date=due_date,
+                    notes=notes,
                 )
                 self.logger.info("Tarea editada: id=%s titulo=%s", self.editing_task_id, title)
                 self.status_var.set(f"Tarea #{self.editing_task_id} actualizada correctamente.")
@@ -617,6 +663,8 @@ class TaskManagerView:
         self.title_var.set(task.title)
         self.priority_var.set(task.priority)
         self.due_date_var.set(task.due_date)
+        self.notes_text.delete("1.0", "end")
+        self.notes_text.insert("1.0", task.notes)
         self.save_button.config(text="Guardar cambios")
         self.cancel_edit_button.config(state="normal")
         self.status_var.set(f"Editando tarea #{task.task_id}.")
@@ -683,7 +731,13 @@ class TaskManagerView:
             tasks = [task for task in tasks if task.priority == current_filter]
 
         if search:
-            tasks = [task for task in tasks if search in task.title.lower()]
+            tasks = [
+                task
+                for task in tasks
+                if search in task.title.lower() or search in task.notes.lower()
+            ]
+
+        tasks = self._sort_tasks(tasks)
 
         return tasks
 
@@ -704,6 +758,7 @@ class TaskManagerView:
         completion = "Completada" if task.completed else "Pendiente"
         self.detail_completion_var.set(f"Estado: {completion}")
         self.detail_alert_var.set(f"Alerta: {self._build_due_date_alert(task)}")
+        self.detail_notes_var.set(f"Notas: {task.notes or 'Sin notas'}")
 
     def _set_empty_detail(self) -> None:
         self.detail_title_var.set("Sin tarea seleccionada")
@@ -711,6 +766,7 @@ class TaskManagerView:
         self.detail_due_date_var.set("Vence: -")
         self.detail_completion_var.set("Estado: -")
         self.detail_alert_var.set("Alerta: -")
+        self.detail_notes_var.set("Notas: -")
 
     def _is_valid_due_date(self, due_date: str) -> bool:
         parts = due_date.split("-")
@@ -752,5 +808,39 @@ class TaskManagerView:
         self.title_var.set("")
         self.priority_var.set("Media")
         self.due_date_var.set("")
+        self.notes_text.delete("1.0", "end")
         self.save_button.config(text="Guardar tarea")
         self.cancel_edit_button.config(state="disabled")
+
+    def _sort_tasks(self, tasks: list[Task]) -> list[Task]:
+        sort_by = self.sort_var.get()
+        priority_order = {"Alta": 0, "Media": 1, "Baja": 2}
+
+        if sort_by == "Prioridad":
+            return sorted(tasks, key=lambda task: (priority_order.get(task.priority, 9), task.task_id))
+        if sort_by == "Vencimiento":
+            return sorted(tasks, key=lambda task: (task.due_date == "", task.due_date or "9999-12-31", task.task_id))
+        if sort_by == "Estado":
+            return sorted(tasks, key=lambda task: (task.completed, task.task_id))
+        if sort_by == "Titulo":
+            return sorted(tasks, key=lambda task: (task.title.lower(), task.task_id))
+        return sorted(tasks, key=lambda task: task.task_id)
+
+    def _get_task_tags(self, task: Task) -> tuple[str, ...]:
+        if task.completed:
+            return ("completed",)
+        if task.due_date:
+            try:
+                due = date.fromisoformat(task.due_date)
+                delta = (due - date.today()).days
+                if delta < 0:
+                    return ("overdue",)
+                if delta == 0:
+                    return ("due_today",)
+                if delta <= 3:
+                    return ("due_soon",)
+            except ValueError:
+                pass
+        if task.priority == "Alta":
+            return ("priority_high",)
+        return tuple()
