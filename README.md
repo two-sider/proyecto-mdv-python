@@ -56,4 +56,14 @@ El binario quedara en `dist/`.
 
 El historial funcional y la numeracion de versiones se documentan en `VERSIONES.md`.
 
+## Seguridad
+
+Para auditar vulnerabilidades conocidas en las dependencias declaradas:
+
+```bash
+python -m pip_audit -r requirements.txt
+```
+
+Actualmente el proyecto fue revisado con `pip-audit` sin hallazgos conocidos.
+
 La documentacion detallada esta en la carpeta `docs/` y en los `README.md` internos de cada modulo.

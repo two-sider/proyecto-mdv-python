@@ -23,6 +23,7 @@ Incluye:
 - selector de tema con modos `clara`, `oscura` y `blue-coding`
 - persistencia de configuracion visual en archivo
 - aplicacion global del tema sobre la interfaz
+- documentacion del flujo de auditoria de dependencias con `pip-audit`
 
 ### `0.2.0` - Gestion visual ampliada
 
