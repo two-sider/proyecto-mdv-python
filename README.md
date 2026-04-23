@@ -2,8 +2,6 @@
 
 Aplicacion de escritorio en Python para gestion de tareas, construida con arquitectura `MDV` (`Modelo`, `Datos`, `Vista`) y una interfaz visual hecha con `tkinter`.
 
-![TaskFlow MDV Showcase](docs/assets/taskflow-showcase-v021.png)
-
 ## Caracteristicas
 
 - creacion, edicion, completado, reapertura y eliminacion de tareas
@@ -24,6 +22,20 @@ La interfaz actual incluye:
 - notas por tarea
 - alertas visuales por prioridad y vencimiento
 - selector de tema con variantes `clara`, `oscura` y `blue-coding`
+
+## Capturas reales
+
+### Tema clara
+
+![TaskFlow MDV tema clara](docs/assets/screenshots/taskflow-clara.png)
+
+### Tema oscura
+
+![TaskFlow MDV tema oscura](docs/assets/screenshots/taskflow-oscura.png)
+
+### Tema blue-coding
+
+![TaskFlow MDV tema blue-coding](docs/assets/screenshots/taskflow-blue-coding.png)
 
 ## Tecnologias
 
