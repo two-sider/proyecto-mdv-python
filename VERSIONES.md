@@ -12,9 +12,17 @@ Se usara el formato `MAJOR.MINOR.PATCH`.
 
 ## Version actual
 
-`0.2.0`
+`0.2.1`
 
 ## Historial
+
+### `0.2.1` - Temas configurables
+
+Incluye:
+
+- selector de tema con modos `clara`, `oscura` y `blue-coding`
+- persistencia de configuracion visual en archivo
+- aplicacion global del tema sobre la interfaz
 
 ### `0.2.0` - Gestion visual ampliada
 

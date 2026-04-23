@@ -6,6 +6,8 @@ __pycache__/
 .venv/
 venv/
 storage/*.bak
+storage/tasks.json
+storage/settings.json
 build/
 dist/
 logs/

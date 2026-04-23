@@ -3,21 +3,28 @@ import tkinter as tk
 from datetime import date
 from tkinter import messagebox, ttk
 
+from src.data.settings_repository import SettingsRepository
 from src.data.task_repository import TaskRepository
 from src.model.task import Task
 
 
 class TaskManagerView:
-    def __init__(self, repository: TaskRepository, logger: logging.Logger | None = None) -> None:
+    def __init__(
+        self,
+        repository: TaskRepository,
+        settings_repository: SettingsRepository,
+        logger: logging.Logger | None = None,
+    ) -> None:
         self.repository = repository
+        self.settings_repository = settings_repository
         self.logger = logger or logging.getLogger(__name__)
         self.root = tk.Tk()
         self.root.title("TaskFlow MDV")
         self.root.geometry("980x640")
         self.root.minsize(900, 560)
-        self.root.configure(bg="#f4efe6")
 
         self.editing_task_id: int | None = None
+        self.theme_var = tk.StringVar(value=self.settings_repository.load_theme())
         self.title_var = tk.StringVar()
         self.priority_var = tk.StringVar(value="Media")
         self.due_date_var = tk.StringVar()
@@ -34,9 +41,11 @@ class TaskManagerView:
         self.summary_var = tk.StringVar()
         self.pending_var = tk.StringVar()
         self.completed_var = tk.StringVar()
+        self.theme_tokens = self._get_theme_tokens(self.theme_var.get())
 
         self._configure_styles()
         self._build_layout()
+        self._apply_theme()
         self._refresh_tasks()
 
     def run(self) -> None:
@@ -44,72 +53,17 @@ class TaskManagerView:
 
     def _configure_styles(self) -> None:
         style = ttk.Style()
+        self.style = style
         style.theme_use("clam")
-        style.configure("App.TFrame", background="#f4efe6")
-        style.configure("Panel.TFrame", background="#fffaf2")
-        style.configure("Card.TFrame", background="#1f3c88")
-        style.configure(
-            "Heading.TLabel",
-            background="#f4efe6",
-            foreground="#1c1c1c",
-            font=("Segoe UI Semibold", 24),
-        )
-        style.configure(
-            "Subheading.TLabel",
-            background="#f4efe6",
-            foreground="#5f5a52",
-            font=("Segoe UI", 11),
-        )
-        style.configure(
-            "CardTitle.TLabel",
-            background="#1f3c88",
-            foreground="#f1f5ff",
-            font=("Segoe UI", 10),
-        )
-        style.configure(
-            "CardValue.TLabel",
-            background="#1f3c88",
-            foreground="#ffffff",
-            font=("Segoe UI Semibold", 20),
-        )
-        style.configure(
-            "Section.TLabel",
-            background="#fffaf2",
-            foreground="#1c1c1c",
-            font=("Segoe UI Semibold", 12),
-        )
-        style.configure(
-            "Status.TLabel",
-            background="#fffaf2",
-            foreground="#6f665c",
-            font=("Segoe UI", 10),
-        )
-        style.configure(
-            "DetailTitle.TLabel",
-            background="#fffaf2",
-            foreground="#1f1f1f",
-            font=("Segoe UI Semibold", 14),
-        )
-        style.configure(
-            "Treeview",
-            background="#fffdf8",
-            fieldbackground="#fffdf8",
-            foreground="#1f1f1f",
-            rowheight=32,
-            bordercolor="#d9cfbf",
-            font=("Segoe UI", 10),
-        )
-        style.configure(
-            "Treeview.Heading",
-            background="#ecdcc7",
-            foreground="#2b2b2b",
-            font=("Segoe UI Semibold", 10),
-        )
-        style.map(
-            "Treeview",
-            background=[("selected", "#c9ddff")],
-            foreground=[("selected", "#10233f")],
-        )
+        style.configure("Heading.TLabel", font=("Segoe UI Semibold", 24))
+        style.configure("Subheading.TLabel", font=("Segoe UI", 11))
+        style.configure("CardTitle.TLabel", font=("Segoe UI", 10))
+        style.configure("CardValue.TLabel", font=("Segoe UI Semibold", 20))
+        style.configure("Section.TLabel", font=("Segoe UI Semibold", 12))
+        style.configure("Status.TLabel", font=("Segoe UI", 10))
+        style.configure("DetailTitle.TLabel", font=("Segoe UI Semibold", 14))
+        style.configure("Treeview", rowheight=32, font=("Segoe UI", 10))
+        style.configure("Treeview.Heading", font=("Segoe UI Semibold", 10))
 
     def _build_layout(self) -> None:
         container = ttk.Frame(self.root, style="App.TFrame", padding=20)
@@ -135,6 +89,20 @@ class TaskManagerView:
             text="Las incidencias y errores se registran en logs/taskflow.log.",
             style="Subheading.TLabel",
         ).grid(row=2, column=0, sticky="w", pady=(4, 0))
+        theme_frame = ttk.Frame(header, style="App.TFrame")
+        theme_frame.grid(row=0, column=1, rowspan=3, sticky="e")
+        ttk.Label(theme_frame, text="Tema", style="Subheading.TLabel").grid(
+            row=0, column=0, sticky="e", padx=(0, 8)
+        )
+        self.theme_combo = ttk.Combobox(
+            theme_frame,
+            textvariable=self.theme_var,
+            values=("clara", "oscura", "blue-coding"),
+            state="readonly",
+            width=14,
+        )
+        self.theme_combo.grid(row=0, column=1, sticky="e")
+        self.theme_combo.bind("<<ComboboxSelected>>", self._handle_theme_change)
 
         content = ttk.Frame(container, style="App.TFrame")
         content.grid(row=1, column=0, columnspan=2, sticky="nsew")
@@ -251,31 +219,31 @@ class TaskManagerView:
         outer_panel.columnconfigure(0, weight=1)
         outer_panel.rowconfigure(0, weight=1)
 
-        canvas = tk.Canvas(
+        self.control_canvas = tk.Canvas(
             outer_panel,
             bg="#fffaf2",
             highlightthickness=0,
             bd=0,
         )
-        canvas.grid(row=0, column=0, sticky="nsew")
+        self.control_canvas.grid(row=0, column=0, sticky="nsew")
 
-        scrollbar = ttk.Scrollbar(outer_panel, orient="vertical", command=canvas.yview)
+        scrollbar = ttk.Scrollbar(outer_panel, orient="vertical", command=self.control_canvas.yview)
         scrollbar.grid(row=0, column=1, sticky="ns")
-        canvas.configure(yscrollcommand=scrollbar.set)
+        self.control_canvas.configure(yscrollcommand=scrollbar.set)
 
-        panel = ttk.Frame(canvas, style="Panel.TFrame", padding=18)
+        panel = ttk.Frame(self.control_canvas, style="Panel.TFrame", padding=18)
         panel.columnconfigure(0, weight=1)
 
-        panel_window = canvas.create_window((0, 0), window=panel, anchor="nw")
+        panel_window = self.control_canvas.create_window((0, 0), window=panel, anchor="nw")
         panel.bind(
             "<Configure>",
-            lambda _event: canvas.configure(scrollregion=canvas.bbox("all")),
+            lambda _event: self.control_canvas.configure(scrollregion=self.control_canvas.bbox("all")),
         )
-        canvas.bind(
+        self.control_canvas.bind(
             "<Configure>",
-            lambda event: canvas.itemconfigure(panel_window, width=event.width),
+            lambda event: self.control_canvas.itemconfigure(panel_window, width=event.width),
         )
-        self._bind_mousewheel(canvas)
+        self._bind_mousewheel(self.control_canvas)
 
         ttk.Label(panel, text="Nueva tarea", style="Section.TLabel").grid(
             row=0, column=0, sticky="w"
@@ -745,6 +713,14 @@ class TaskManagerView:
         self.status_var.set("Vista actualizada con los filtros aplicados.")
         self._refresh_tasks()
 
+    def _handle_theme_change(self, _event: tk.Event | None = None) -> None:
+        theme = self.theme_var.get()
+        self.theme_tokens = self._get_theme_tokens(theme)
+        self.settings_repository.save_theme(theme)
+        self._apply_theme()
+        self.logger.info("Tema actualizado: %s", theme)
+        self.status_var.set(f"Tema aplicado: {theme}.")
+
     def _handle_tree_resize(self, event: tk.Event) -> None:
         available_width = max(int(event.width), 620)
         fixed_width = 70 + 120 + 120 + 130
@@ -811,6 +787,213 @@ class TaskManagerView:
         self.notes_text.delete("1.0", "end")
         self.save_button.config(text="Guardar tarea")
         self.cancel_edit_button.config(state="disabled")
+
+    def _apply_theme(self) -> None:
+        tokens = self.theme_tokens
+        self.root.configure(bg=tokens["app_bg"])
+        self.style.configure("App.TFrame", background=tokens["app_bg"])
+        self.style.configure("Panel.TFrame", background=tokens["panel_bg"])
+        self.style.configure("Card.TFrame", background=tokens["card_bg"])
+        self.style.configure("Heading.TLabel", background=tokens["app_bg"], foreground=tokens["heading_fg"])
+        self.style.configure("Subheading.TLabel", background=tokens["app_bg"], foreground=tokens["subheading_fg"])
+        self.style.configure("CardTitle.TLabel", background=tokens["card_bg"], foreground=tokens["card_title_fg"])
+        self.style.configure("CardValue.TLabel", background=tokens["card_bg"], foreground=tokens["card_value_fg"])
+        self.style.configure("Section.TLabel", background=tokens["panel_bg"], foreground=tokens["section_fg"])
+        self.style.configure("Status.TLabel", background=tokens["panel_bg"], foreground=tokens["status_fg"])
+        self.style.configure("DetailTitle.TLabel", background=tokens["panel_bg"], foreground=tokens["detail_fg"])
+        self.style.configure(
+            "Treeview",
+            background=tokens["tree_bg"],
+            fieldbackground=tokens["tree_bg"],
+            foreground=tokens["tree_fg"],
+            bordercolor=tokens["border"],
+        )
+        self.style.configure(
+            "Treeview.Heading",
+            background=tokens["tree_heading_bg"],
+            foreground=tokens["tree_heading_fg"],
+        )
+        self.style.map(
+            "Treeview",
+            background=[("selected", tokens["selected_bg"])],
+            foreground=[("selected", tokens["selected_fg"])],
+        )
+
+        self.tree.tag_configure("overdue", background=tokens["overdue_bg"], foreground=tokens["overdue_fg"])
+        self.tree.tag_configure("due_today", background=tokens["today_bg"], foreground=tokens["today_fg"])
+        self.tree.tag_configure("due_soon", background=tokens["soon_bg"], foreground=tokens["soon_fg"])
+        self.tree.tag_configure("priority_high", background=tokens["high_bg"], foreground=tokens["high_fg"])
+        self.tree.tag_configure("completed", background=tokens["done_bg"], foreground=tokens["done_fg"])
+
+        self.control_canvas.configure(bg=tokens["panel_bg"])
+        self.notes_text.configure(
+            bg=tokens["input_bg"],
+            fg=tokens["input_fg"],
+            insertbackground=tokens["input_fg"],
+            highlightbackground=tokens["border"],
+            highlightcolor=tokens["accent"],
+        )
+
+        for entry in self.root.winfo_children():
+            self._apply_theme_to_entries(entry, tokens)
+
+    def _apply_theme_to_entries(self, widget: tk.Widget, tokens: dict[str, str]) -> None:
+        for child in widget.winfo_children():
+            if type(child) is tk.Entry:
+                child.configure(
+                    bg=tokens["input_bg"],
+                    fg=tokens["input_fg"],
+                    insertbackground=tokens["input_fg"],
+                    highlightbackground=tokens["border"],
+                    highlightcolor=tokens["accent"],
+                )
+            elif type(child) is tk.Button:
+                self._apply_button_theme(child, tokens)
+            elif type(child) is tk.Canvas:
+                child.configure(bg=tokens["panel_bg"])
+            self._apply_theme_to_entries(child, tokens)
+
+    def _apply_button_theme(self, button: tk.Button, tokens: dict[str, str]) -> None:
+        button_text = button.cget("text")
+        palette = {
+            "Guardar tarea": tokens["accent"],
+            "Guardar cambios": tokens["accent"],
+            "Cargar para editar": tokens["edit_btn"],
+            "Marcar como completada": tokens["success_btn"],
+            "Reabrir tarea": tokens["warning_btn"],
+            "Eliminar tarea": tokens["danger_btn"],
+            "Cancelar edicion": tokens["neutral_btn"],
+        }
+        background = palette.get(button_text, tokens["accent"])
+        button.configure(
+            bg=background,
+            fg=tokens["button_fg"],
+            activebackground=background,
+            activeforeground=tokens["button_fg"],
+            disabledforeground=tokens["button_disabled_fg"],
+        )
+
+    def _get_theme_tokens(self, theme: str) -> dict[str, str]:
+        palettes = {
+            "clara": {
+                "app_bg": "#f4efe6",
+                "panel_bg": "#fffaf2",
+                "card_bg": "#1f3c88",
+                "heading_fg": "#1c1c1c",
+                "subheading_fg": "#5f5a52",
+                "card_title_fg": "#f1f5ff",
+                "card_value_fg": "#ffffff",
+                "section_fg": "#1c1c1c",
+                "status_fg": "#6f665c",
+                "detail_fg": "#1f1f1f",
+                "tree_bg": "#fffdf8",
+                "tree_fg": "#1f1f1f",
+                "tree_heading_bg": "#ecdcc7",
+                "tree_heading_fg": "#2b2b2b",
+                "selected_bg": "#c9ddff",
+                "selected_fg": "#10233f",
+                "input_bg": "#fffdf8",
+                "input_fg": "#1f1f1f",
+                "border": "#d4c7b6",
+                "accent": "#1f3c88",
+                "edit_btn": "#5b4abf",
+                "success_btn": "#2d6a4f",
+                "warning_btn": "#9a6700",
+                "danger_btn": "#a63c3c",
+                "neutral_btn": "#6b7280",
+                "button_fg": "#ffffff",
+                "button_disabled_fg": "#e7ded0",
+                "overdue_bg": "#f8d7da",
+                "overdue_fg": "#6a1b1b",
+                "today_bg": "#ffe9b3",
+                "today_fg": "#6b4b00",
+                "soon_bg": "#fff4d6",
+                "soon_fg": "#6b4b00",
+                "high_bg": "#fbe4e6",
+                "high_fg": "#7f1d1d",
+                "done_bg": "#e3f4e8",
+                "done_fg": "#1f5132",
+            },
+            "oscura": {
+                "app_bg": "#11161b",
+                "panel_bg": "#1b232c",
+                "card_bg": "#233041",
+                "heading_fg": "#f2f5f7",
+                "subheading_fg": "#9db0bf",
+                "card_title_fg": "#b9d2ea",
+                "card_value_fg": "#ffffff",
+                "section_fg": "#e7eef4",
+                "status_fg": "#afbcc6",
+                "detail_fg": "#f2f5f7",
+                "tree_bg": "#182028",
+                "tree_fg": "#ecf2f8",
+                "tree_heading_bg": "#273645",
+                "tree_heading_fg": "#ecf2f8",
+                "selected_bg": "#35506b",
+                "selected_fg": "#ffffff",
+                "input_bg": "#121920",
+                "input_fg": "#eef3f7",
+                "border": "#384857",
+                "accent": "#3b82f6",
+                "edit_btn": "#6366f1",
+                "success_btn": "#2f855a",
+                "warning_btn": "#b7791f",
+                "danger_btn": "#c53030",
+                "neutral_btn": "#4b5563",
+                "button_fg": "#ffffff",
+                "button_disabled_fg": "#b4c0ca",
+                "overdue_bg": "#5a1f26",
+                "overdue_fg": "#ffd8dc",
+                "today_bg": "#61451b",
+                "today_fg": "#ffe7b3",
+                "soon_bg": "#4d431f",
+                "soon_fg": "#ffefbf",
+                "high_bg": "#4d2730",
+                "high_fg": "#ffd6dd",
+                "done_bg": "#1e4734",
+                "done_fg": "#d7ffe7",
+            },
+            "blue-coding": {
+                "app_bg": "#07111f",
+                "panel_bg": "#0d1b2f",
+                "card_bg": "#12345a",
+                "heading_fg": "#d8f0ff",
+                "subheading_fg": "#7db8d8",
+                "card_title_fg": "#8dd7ff",
+                "card_value_fg": "#ecfbff",
+                "section_fg": "#c3ebff",
+                "status_fg": "#8bb8cf",
+                "detail_fg": "#f1fbff",
+                "tree_bg": "#0a1526",
+                "tree_fg": "#d7f4ff",
+                "tree_heading_bg": "#16304f",
+                "tree_heading_fg": "#d7f4ff",
+                "selected_bg": "#1f4f82",
+                "selected_fg": "#ffffff",
+                "input_bg": "#081220",
+                "input_fg": "#d7f4ff",
+                "border": "#1f4165",
+                "accent": "#1d72d8",
+                "edit_btn": "#3454d1",
+                "success_btn": "#13795b",
+                "warning_btn": "#bf8b16",
+                "danger_btn": "#c94c4c",
+                "neutral_btn": "#4f6d8a",
+                "button_fg": "#f4fbff",
+                "button_disabled_fg": "#afc8da",
+                "overdue_bg": "#4e2131",
+                "overdue_fg": "#ffd5e1",
+                "today_bg": "#5a4216",
+                "today_fg": "#ffe7ad",
+                "soon_bg": "#3d4318",
+                "soon_fg": "#f3ffc1",
+                "high_bg": "#2c254d",
+                "high_fg": "#d6d3ff",
+                "done_bg": "#163f3a",
+                "done_fg": "#c8fff5",
+            },
+        }
+        return palettes.get(theme, palettes["clara"])
 
     def _sort_tasks(self, tasks: list[Task]) -> list[Task]:
         sort_by = self.sort_var.get()

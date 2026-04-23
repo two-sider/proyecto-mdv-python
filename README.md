@@ -8,7 +8,7 @@ Este proyecto implementa una estructura `MDV` simple en Python:
 
 La aplicacion incluida ofrece una interfaz visual de escritorio para registrar, completar, reabrir y eliminar tareas usando almacenamiento JSON local.
 Tambien permite asignar prioridad, fecha de vencimiento, busqueda por texto y filtros de estado.
-La vista incluye edicion de tareas, notas, ordenamiento y alertas visuales para vencimientos.
+La vista incluye edicion de tareas, notas, ordenamiento, alertas visuales para vencimientos y selector de tema.
 
 ## Estructura
 
