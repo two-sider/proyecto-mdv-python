@@ -206,21 +206,60 @@ class TaskManagerView:
         self.tree.heading("due_date", text="Vence")
         self.tree.heading("status", text="Estado")
         self.tree.column("id", width=70, anchor="center", stretch=False)
-        self.tree.column("title", width=300, anchor="w")
-        self.tree.column("priority", width=110, anchor="center", stretch=False)
-        self.tree.column("due_date", width=110, anchor="center", stretch=False)
-        self.tree.column("status", width=130, anchor="center", stretch=False)
+        self.tree.column("title", width=360, minwidth=220, anchor="w", stretch=True)
+        self.tree.column("priority", width=120, minwidth=100, anchor="center", stretch=False)
+        self.tree.column("due_date", width=120, minwidth=100, anchor="center", stretch=False)
+        self.tree.column("status", width=130, minwidth=110, anchor="center", stretch=False)
         self.tree.grid(row=0, column=0, sticky="nsew")
         self.tree.bind("<<TreeviewSelect>>", self._on_select_task)
+        self.tree.bind("<Configure>", self._handle_tree_resize)
 
-        scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=self.tree.yview)
-        scrollbar.grid(row=0, column=1, sticky="ns")
-        self.tree.configure(yscrollcommand=scrollbar.set)
+        vertical_scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=self.tree.yview)
+        vertical_scrollbar.grid(row=0, column=1, sticky="ns")
+
+        horizontal_scrollbar = ttk.Scrollbar(
+            table_frame,
+            orient="horizontal",
+            command=self.tree.xview,
+        )
+        horizontal_scrollbar.grid(row=1, column=0, sticky="ew", pady=(8, 0))
+
+        self.tree.configure(
+            yscrollcommand=vertical_scrollbar.set,
+            xscrollcommand=horizontal_scrollbar.set,
+        )
 
     def _build_control_panel(self, parent: ttk.Frame) -> None:
-        panel = ttk.Frame(parent, style="Panel.TFrame", padding=18)
-        panel.grid(row=0, column=1, sticky="nsew")
+        outer_panel = ttk.Frame(parent, style="Panel.TFrame")
+        outer_panel.grid(row=0, column=1, sticky="nsew")
+        outer_panel.columnconfigure(0, weight=1)
+        outer_panel.rowconfigure(0, weight=1)
+
+        canvas = tk.Canvas(
+            outer_panel,
+            bg="#fffaf2",
+            highlightthickness=0,
+            bd=0,
+        )
+        canvas.grid(row=0, column=0, sticky="nsew")
+
+        scrollbar = ttk.Scrollbar(outer_panel, orient="vertical", command=canvas.yview)
+        scrollbar.grid(row=0, column=1, sticky="ns")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        panel = ttk.Frame(canvas, style="Panel.TFrame", padding=18)
         panel.columnconfigure(0, weight=1)
+
+        panel_window = canvas.create_window((0, 0), window=panel, anchor="nw")
+        panel.bind(
+            "<Configure>",
+            lambda _event: canvas.configure(scrollregion=canvas.bbox("all")),
+        )
+        canvas.bind(
+            "<Configure>",
+            lambda event: canvas.itemconfigure(panel_window, width=event.width),
+        )
+        self._bind_mousewheel(canvas)
 
         ttk.Label(panel, text="Nueva tarea", style="Section.TLabel").grid(
             row=0, column=0, sticky="w"
@@ -393,6 +432,19 @@ class TaskManagerView:
 
         self._set_action_state("disabled")
         self.cancel_edit_button.config(state="disabled")
+
+    def _bind_mousewheel(self, widget: tk.Widget) -> None:
+        widget.bind("<Enter>", lambda _event: self._activate_mousewheel(widget))
+        widget.bind("<Leave>", lambda _event: self._deactivate_mousewheel())
+
+    def _activate_mousewheel(self, widget: tk.Widget) -> None:
+        self.root.bind_all("<MouseWheel>", lambda event: self._on_mousewheel(widget, event))
+
+    def _deactivate_mousewheel(self) -> None:
+        self.root.unbind_all("<MouseWheel>")
+
+    def _on_mousewheel(self, widget: tk.Widget, event: tk.Event) -> None:
+        widget.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
     def _build_card(self, parent: ttk.Frame, column: int, label: str, variable: tk.StringVar) -> None:
         card = ttk.Frame(parent, style="Card.TFrame", padding=16)
@@ -638,6 +690,12 @@ class TaskManagerView:
     def _handle_filter_change(self, _event: tk.Event | None = None) -> None:
         self.status_var.set("Vista actualizada con los filtros aplicados.")
         self._refresh_tasks()
+
+    def _handle_tree_resize(self, event: tk.Event) -> None:
+        available_width = max(int(event.width), 620)
+        fixed_width = 70 + 120 + 120 + 130
+        title_width = max(220, available_width - fixed_width - 12)
+        self.tree.column("title", width=title_width)
 
     def _set_task_detail(self, task: Task) -> None:
         self.detail_title_var.set(task.title)
