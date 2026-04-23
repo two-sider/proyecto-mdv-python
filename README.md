@@ -1,16 +1,34 @@
-# Proyecto MDV en Python
+# TaskFlow MDV
 
-Este proyecto implementa una estructura `MDV` simple en Python:
+Aplicacion de escritorio en Python para gestion de tareas, construida con arquitectura `MDV` (`Modelo`, `Datos`, `Vista`) y una interfaz visual hecha con `tkinter`.
 
-- `Modelo`: define las entidades del dominio.
-- `Datos`: guarda y recupera informacion.
-- `Vista`: interactua con el usuario.
+## Caracteristicas
 
-La aplicacion incluida ofrece una interfaz visual de escritorio para registrar, completar, reabrir y eliminar tareas usando almacenamiento JSON local.
-Tambien permite asignar prioridad, fecha de vencimiento, busqueda por texto y filtros de estado.
-La vista incluye edicion de tareas, notas, ordenamiento, alertas visuales para vencimientos y selector de tema.
+- creacion, edicion, completado, reapertura y eliminacion de tareas
+- prioridad, fecha de vencimiento y notas por tarea
+- filtros, busqueda y ordenamiento
+- alertas visuales para tareas vencidas o proximas a vencer
+- selector de tema con modos `clara`, `oscura` y `blue-coding`
+- persistencia local en JSON
+- logs en archivo
+- ejecutable para Windows con `PyInstaller`
 
-## Estructura
+## Tecnologias
+
+- Python 3.12
+- tkinter
+- pytest
+- PyInstaller
+
+## Arquitectura
+
+El proyecto sigue una separacion `MDV`:
+
+- `model`: entidades del dominio
+- `data`: persistencia y configuracion
+- `view`: interfaz grafica y flujo de interaccion
+
+Estructura principal:
 
 ```text
 proyecto-mdv-python/
@@ -19,42 +37,47 @@ proyecto-mdv-python/
 |   |-- model/
 |   |-- data/
 |   `-- view/
-|-- storage/
 |-- docs/
 |-- tests/
-|-- .gitignore
+|-- storage/
+|-- logs/
+|-- VERSIONES.md
 `-- requirements.txt
 ```
 
 ## Ejecucion
 
+Desde la raiz del proyecto:
+
 ```bash
 python -m src.main
 ```
 
-## Objetivo de cada capa
-
-- `model`: representa la estructura de la informacion.
-- `data`: se encarga de persistir las tareas.
-- `view`: construye la interfaz grafica y refleja el estado actual de las tareas.
-
-## Logs
-
-Los eventos y errores de la aplicacion se escriben en `logs/taskflow.log`.
-
 ## Ejecutable
 
-Para generar un ejecutable de Windows:
+Para generar el ejecutable de Windows:
 
 ```bash
-python -m PyInstaller --name TaskFlowMDV --windowed --onefile -m src.main
+python -m PyInstaller --name TaskFlowMDV --windowed --onefile src/main.py
 ```
 
-El binario quedara en `dist/`.
+El binario se genera en `dist/`.
 
-## Control de versiones
+## Configuracion
 
-El historial funcional y la numeracion de versiones se documentan en `VERSIONES.md`.
+La aplicacion guarda datos locales en:
+
+- `storage/tasks.json`: tareas
+- `storage/settings.json`: preferencias visuales
+- `logs/taskflow.log`: eventos y errores
+
+## Versiones
+
+El historial funcional y la numeracion de versiones se documentan en [VERSIONES.md](C:\Users\x13\proyecto-mdv-python\VERSIONES.md).
+
+Version actual:
+
+- `0.2.1`
 
 ## Seguridad
 
@@ -64,6 +87,25 @@ Para auditar vulnerabilidades conocidas en las dependencias declaradas:
 python -m pip_audit -r requirements.txt
 ```
 
-Actualmente el proyecto fue revisado con `pip-audit` sin hallazgos conocidos.
+Estado actual:
 
-La documentacion detallada esta en la carpeta `docs/` y en los `README.md` internos de cada modulo.
+- sin vulnerabilidades conocidas detectadas en la ultima revision con `pip-audit`
+
+## Pruebas
+
+Para ejecutar la suite:
+
+```bash
+python -m pytest -q
+```
+
+## Documentacion adicional
+
+- `docs/`: arquitectura y flujo de la aplicacion
+- `src/*/README.md`: descripcion breve por modulo
+
+## Roadmap corto
+
+- mejorar exportacion e importacion de tareas
+- seguir refinando la experiencia visual
+- ampliar configuraciones de usuario
