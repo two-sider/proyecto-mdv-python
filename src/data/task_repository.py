@@ -88,6 +88,18 @@ class TaskRepository:
 
         return deleted
 
+    def duplicate_task(self, task_id: int) -> Task | None:
+        source_task = self.find_task(task_id)
+        if source_task is None:
+            return None
+
+        return self.add_task(
+            f"Copia de {source_task.title}",
+            priority=source_task.priority,
+            due_date=source_task.due_date,
+            notes=source_task.notes,
+        )
+
     def find_task(self, task_id: int) -> Task | None:
         for task in self.list_tasks():
             if task.task_id == task_id:

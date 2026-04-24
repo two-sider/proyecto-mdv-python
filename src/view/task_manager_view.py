@@ -168,6 +168,22 @@ class TaskManagerView:
         search_entry.grid(row=0, column=3, sticky="ew")
         search_entry.bind("<KeyRelease>", self._handle_filter_change)
 
+        clear_filters_button = tk.Button(
+            filter_frame,
+            text="Limpiar filtros",
+            command=self._reset_filters,
+            bg="#6b7280",
+            fg="white",
+            activebackground="#6b7280",
+            activeforeground="white",
+            relief="flat",
+            cursor="hand2",
+            font=("Segoe UI Semibold", 9),
+            padx=10,
+            pady=8,
+        )
+        clear_filters_button.grid(row=0, column=4, sticky="e", padx=(10, 0))
+
         table_frame = ttk.Frame(panel, style="Panel.TFrame")
         table_frame.grid(row=2, column=0, sticky="nsew")
         table_frame.columnconfigure(0, weight=1)
@@ -378,92 +394,99 @@ class TaskManagerView:
             background="#a63c3c",
             command=self._delete_selected_task,
         )
-        self.cancel_edit_button = self._build_action_button(
+        self.duplicate_button = self._build_action_button(
             panel,
             row=14,
+            text="Duplicar tarea",
+            background="#0f766e",
+            command=self._duplicate_selected_task,
+        )
+        self.cancel_edit_button = self._build_action_button(
+            panel,
+            row=15,
             text="Cancelar edicion",
             background="#6b7280",
             command=self._cancel_edit_mode,
         )
 
         ttk.Separator(panel, orient="horizontal").grid(
-            row=15, column=0, sticky="ew", pady=(18, 10)
+            row=16, column=0, sticky="ew", pady=(18, 10)
         )
-        ttk.Label(panel, text="Datos", style="Section.TLabel").grid(row=16, column=0, sticky="w")
+        ttk.Label(panel, text="Datos", style="Section.TLabel").grid(row=17, column=0, sticky="w")
         ttk.Label(
             panel,
             text="Exporta un respaldo JSON o importa tareas desde otro archivo.",
             style="Status.TLabel",
-        ).grid(row=17, column=0, sticky="w", pady=(4, 12))
+        ).grid(row=18, column=0, sticky="w", pady=(4, 12))
 
         self.export_button = self._build_action_button(
             panel,
-            row=18,
+            row=19,
             text="Exportar tareas",
             background="#146c94",
             command=self._export_tasks,
         )
         self.import_button = self._build_action_button(
             panel,
-            row=19,
+            row=20,
             text="Importar tareas",
             background="#7c5c1d",
             command=self._import_tasks,
         )
 
         ttk.Separator(panel, orient="horizontal").grid(
-            row=20, column=0, sticky="ew", pady=(18, 10)
+            row=21, column=0, sticky="ew", pady=(18, 10)
         )
-        ttk.Label(panel, text="Estado", style="Section.TLabel").grid(row=21, column=0, sticky="w")
+        ttk.Label(panel, text="Estado", style="Section.TLabel").grid(row=22, column=0, sticky="w")
         ttk.Label(
             panel,
             textvariable=self.detail_title_var,
             style="DetailTitle.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=22, column=0, sticky="w", pady=(8, 0))
+        ).grid(row=23, column=0, sticky="w", pady=(8, 0))
         ttk.Label(
             panel,
             textvariable=self.detail_priority_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=23, column=0, sticky="w", pady=(6, 0))
+        ).grid(row=24, column=0, sticky="w", pady=(6, 0))
         ttk.Label(
             panel,
             textvariable=self.detail_due_date_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=24, column=0, sticky="w", pady=(4, 0))
+        ).grid(row=25, column=0, sticky="w", pady=(4, 0))
         ttk.Label(
             panel,
             textvariable=self.detail_completion_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=25, column=0, sticky="w", pady=(4, 0))
+        ).grid(row=26, column=0, sticky="w", pady=(4, 0))
         ttk.Label(
             panel,
             textvariable=self.detail_alert_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=26, column=0, sticky="w", pady=(4, 0))
+        ).grid(row=27, column=0, sticky="w", pady=(4, 0))
         ttk.Label(
             panel,
             textvariable=self.detail_notes_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=27, column=0, sticky="w", pady=(4, 0))
+        ).grid(row=28, column=0, sticky="w", pady=(4, 0))
         ttk.Label(
             panel,
             textvariable=self.status_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=28, column=0, sticky="w", pady=(12, 0))
+        ).grid(row=29, column=0, sticky="w", pady=(12, 0))
 
         self._set_action_state("disabled")
         self.cancel_edit_button.config(state="disabled")
@@ -648,6 +671,30 @@ class TaskManagerView:
             self.logger.exception("Error al eliminar tarea")
             self.status_var.set(f"Error al eliminar la tarea: {error}")
 
+    def _duplicate_selected_task(self) -> None:
+        task = self._get_selected_task()
+        if task is None:
+            return
+
+        try:
+            duplicated = self.repository.duplicate_task(task.task_id)
+            if duplicated is None:
+                self.status_var.set("La tarea seleccionada ya no existe.")
+                self._refresh_tasks()
+                return
+
+            self.logger.info(
+                "Tarea duplicada: origen=%s duplicado=%s",
+                task.task_id,
+                duplicated.task_id,
+            )
+            self.status_var.set(f"Tarea #{task.task_id} duplicada como #{duplicated.task_id}.")
+            self._refresh_tasks()
+            self._restore_selection(duplicated.task_id)
+        except Exception as error:
+            self.logger.exception("Error al duplicar tarea")
+            self.status_var.set(f"Error al duplicar la tarea: {error}")
+
     def _load_selected_task_for_edit(self) -> None:
         task = self._get_selected_task()
         if task is None:
@@ -667,6 +714,13 @@ class TaskManagerView:
     def _cancel_edit_mode(self) -> None:
         self._clear_form()
         self.status_var.set("Edicion cancelada.")
+
+    def _reset_filters(self) -> None:
+        self.filter_var.set("Todas")
+        self.sort_var.set("Fecha de creacion")
+        self.search_var.set("")
+        self.status_var.set("Filtros reiniciados.")
+        self._refresh_tasks()
 
     def _export_tasks(self) -> None:
         default_name = f"taskflow-backup-{date.today().isoformat()}.json"
@@ -759,6 +813,7 @@ class TaskManagerView:
         self.complete_button.config(state=state)
         self.reopen_button.config(state=state)
         self.delete_button.config(state=state)
+        self.duplicate_button.config(state=state)
 
     def _get_selected_task(self) -> Task | None:
         selection = self.tree.selection()
@@ -951,6 +1006,7 @@ class TaskManagerView:
             "Marcar como completada": tokens["success_btn"],
             "Reabrir tarea": tokens["warning_btn"],
             "Eliminar tarea": tokens["danger_btn"],
+            "Duplicar tarea": tokens["secondary_btn"],
             "Cancelar edicion": tokens["neutral_btn"],
             "Exportar tareas": tokens["info_btn"],
             "Importar tareas": tokens["import_btn"],
@@ -991,6 +1047,7 @@ class TaskManagerView:
                 "success_btn": "#2d6a4f",
                 "warning_btn": "#9a6700",
                 "danger_btn": "#a63c3c",
+                "secondary_btn": "#0f766e",
                 "neutral_btn": "#6b7280",
                 "info_btn": "#146c94",
                 "import_btn": "#7c5c1d",
@@ -1032,6 +1089,7 @@ class TaskManagerView:
                 "success_btn": "#2f855a",
                 "warning_btn": "#b7791f",
                 "danger_btn": "#c53030",
+                "secondary_btn": "#0f8b82",
                 "neutral_btn": "#4b5563",
                 "info_btn": "#1d6fa5",
                 "import_btn": "#8c6a1f",
@@ -1073,6 +1131,7 @@ class TaskManagerView:
                 "success_btn": "#13795b",
                 "warning_btn": "#bf8b16",
                 "danger_btn": "#c94c4c",
+                "secondary_btn": "#139089",
                 "neutral_btn": "#4f6d8a",
                 "info_btn": "#0f7abf",
                 "import_btn": "#9a741c",

@@ -10,6 +10,7 @@ Aplicacion de escritorio en Python para gestion de tareas, construida con arquit
 - alertas visuales para tareas vencidas o proximas a vencer
 - selector de tema con modos `clara`, `oscura` y `blue-coding`
 - exportacion e importacion de tareas en JSON
+- duplicado rapido de tareas y reinicio de filtros
 - persistencia local en JSON
 - logs en archivo
 - ejecutable para Windows con `PyInstaller`
@@ -24,6 +25,7 @@ La interfaz actual incluye:
 - alertas visuales por prioridad y vencimiento
 - selector de tema con variantes `clara`, `oscura` y `blue-coding`
 - acciones de respaldo y restauracion de tareas
+- boton para limpiar filtros y duplicar tareas existentes
 
 ## Capturas reales
 
@@ -105,7 +107,7 @@ El historial funcional y la numeracion de versiones se documentan en [VERSIONES.
 
 Version actual:
 
-- `0.3.0`
+- `0.3.1`
 
 ## Seguridad
 

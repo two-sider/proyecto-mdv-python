@@ -12,9 +12,17 @@ Se usara el formato `MAJOR.MINOR.PATCH`.
 
 ## Version actual
 
-`0.3.0`
+`0.3.1`
 
 ## Historial
+
+### `0.3.1` - Ajustes de experiencia de uso
+
+Incluye:
+
+- boton para reiniciar filtros, orden y busqueda en un clic
+- duplicado rapido de tareas desde el panel de acciones
+- pruebas del repositorio para duplicacion de tareas
 
 ### `0.3.0` - Exportacion e importacion de tareas
 

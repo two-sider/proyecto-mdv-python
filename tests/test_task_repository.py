@@ -121,3 +121,30 @@ def test_import_tasks_merge_appends_with_new_ids(tmp_path: Path) -> None:
         "Tarea externa A",
         "Tarea externa B",
     ]
+
+
+def test_duplicate_task_creates_new_copy_with_new_id(tmp_path: Path) -> None:
+    repository = TaskRepository(tmp_path / "tasks.json")
+    original = repository.add_task(
+        "Preparar demo",
+        priority="Alta",
+        due_date="2026-06-10",
+        notes="Con datos reales",
+    )
+
+    duplicated = repository.duplicate_task(original.task_id)
+    tasks = repository.list_tasks()
+
+    assert duplicated is not None
+    assert duplicated.task_id == 2
+    assert duplicated.title == "Copia de Preparar demo"
+    assert duplicated.priority == "Alta"
+    assert duplicated.due_date == "2026-06-10"
+    assert duplicated.notes == "Con datos reales"
+    assert [task.task_id for task in tasks] == [1, 2]
+
+
+def test_duplicate_task_returns_none_for_unknown_id(tmp_path: Path) -> None:
+    repository = TaskRepository(tmp_path / "tasks.json")
+
+    assert repository.duplicate_task(999) is None
