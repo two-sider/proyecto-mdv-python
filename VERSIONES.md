@@ -12,9 +12,18 @@ Se usara el formato `MAJOR.MINOR.PATCH`.
 
 ## Version actual
 
-`0.4.0`
+`0.5.0`
 
 ## Historial
+
+### `0.5.0` - Responsables y recarga externa
+
+Incluye:
+
+- campo `responsable` por tarea
+- selector reutilizable con responsables ya usados previamente
+- separacion visual entre `Filtro` y `Ordenar por`
+- recarga manual y actualizacion automatica cuando cambia el archivo de tareas desde fuera de la app
 
 ### `0.4.0` - Sincronizacion con Google Drive
 

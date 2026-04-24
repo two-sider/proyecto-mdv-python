@@ -23,6 +23,7 @@ class TaskRepository:
         self,
         title: str,
         priority: str = "Media",
+        assignee: str = "",
         due_date: str = "",
         notes: str = "",
     ) -> Task:
@@ -32,6 +33,7 @@ class TaskRepository:
             task_id=next_id,
             title=title.strip(),
             priority=priority.strip() or "Media",
+            assignee=assignee.strip(),
             due_date=due_date.strip(),
             notes=notes.strip(),
         )
@@ -62,6 +64,7 @@ class TaskRepository:
         task_id: int,
         title: str,
         priority: str,
+        assignee: str,
         due_date: str,
         notes: str,
     ) -> bool:
@@ -72,6 +75,7 @@ class TaskRepository:
             if task.task_id == task_id:
                 task.title = title.strip()
                 task.priority = priority.strip() or "Media"
+                task.assignee = assignee.strip()
                 task.due_date = due_date.strip()
                 task.notes = notes.strip()
                 updated = True
@@ -100,9 +104,18 @@ class TaskRepository:
         return self.add_task(
             f"Copia de {source_task.title}",
             priority=source_task.priority,
+            assignee=source_task.assignee,
             due_date=source_task.due_date,
             notes=source_task.notes,
         )
+
+    def list_assignees(self) -> list[str]:
+        assignees = {
+            task.assignee.strip()
+            for task in self.list_tasks()
+            if task.assignee.strip()
+        }
+        return sorted(assignees, key=str.lower)
 
     def find_task(self, task_id: int) -> Task | None:
         for task in self.list_tasks():
@@ -136,6 +149,7 @@ class TaskRepository:
                         title=task.title,
                         completed=task.completed,
                         priority=task.priority,
+                        assignee=task.assignee,
                         due_date=task.due_date,
                         notes=task.notes,
                     )
@@ -170,6 +184,7 @@ class TaskRepository:
                     title=task.title,
                     completed=task.completed,
                     priority=task.priority,
+                    assignee=task.assignee,
                     due_date=task.due_date,
                     notes=task.notes,
                 )

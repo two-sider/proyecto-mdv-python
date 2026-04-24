@@ -5,13 +5,14 @@ Aplicacion de escritorio en Python para gestion de tareas, construida con arquit
 ## Caracteristicas
 
 - creacion, edicion, completado, reapertura y eliminacion de tareas
-- prioridad, fecha de vencimiento y notas por tarea
+- prioridad, responsable, fecha de vencimiento y notas por tarea
 - filtros, busqueda y ordenamiento
 - alertas visuales para tareas vencidas o proximas a vencer
 - selector de tema con modos `clara`, `oscura` y `blue-coding`
 - exportacion e importacion de tareas en JSON
 - duplicado rapido de tareas y reinicio de filtros
 - sincronizacion opcional con carpeta de Google Drive
+- recarga manual y actualizacion automatica ante cambios externos del archivo
 - persistencia local en JSON
 - logs en archivo
 - ejecutable para Windows con `PyInstaller`
@@ -22,12 +23,13 @@ La interfaz actual incluye:
 
 - tabla de tareas con filtros, busqueda y ordenamiento
 - panel lateral de detalle y edicion
-- notas por tarea
+- notas por tarea y responsable reutilizable
 - alertas visuales por prioridad y vencimiento
 - selector de tema con variantes `clara`, `oscura` y `blue-coding`
 - acciones de respaldo y restauracion de tareas
 - boton para limpiar filtros y duplicar tareas existentes
 - conexion opcional a una carpeta sincronizada de Google Drive
+- recarga del archivo cuando hay cambios desde fuera de la app
 
 ## Capturas reales
 
@@ -111,7 +113,7 @@ El historial funcional y la numeracion de versiones se documentan en [VERSIONES.
 
 Version actual:
 
-- `0.4.0`
+- `0.5.0`
 
 ## Seguridad
 
@@ -143,3 +145,4 @@ python -m pytest -q
 - seguir refinando la experiencia visual
 - ampliar configuraciones de usuario
 - agregar categorias o etiquetas
+- historial de cambios por tarea

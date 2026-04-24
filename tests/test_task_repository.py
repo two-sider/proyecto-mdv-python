@@ -9,6 +9,7 @@ def test_add_and_complete_task(tmp_path: Path) -> None:
     task = repository.add_task(
         "Preparar documentacion",
         priority="Alta",
+        assignee="Nico",
         due_date="2026-04-30",
         notes="Preparar resumen del avance",
     )
@@ -16,6 +17,7 @@ def test_add_and_complete_task(tmp_path: Path) -> None:
     assert task.title == "Preparar documentacion"
     assert task.completed is False
     assert task.priority == "Alta"
+    assert task.assignee == "Nico"
     assert task.due_date == "2026-04-30"
     assert task.notes == "Preparar resumen del avance"
 
@@ -55,6 +57,7 @@ def test_update_task_changes_main_fields(tmp_path: Path) -> None:
         task.task_id,
         title="Actualizada",
         priority="Alta",
+        assignee="Vale",
         due_date="2026-05-10",
         notes="Ahora con detalle ampliado",
     ) is True
@@ -63,6 +66,7 @@ def test_update_task_changes_main_fields(tmp_path: Path) -> None:
     assert updated is not None
     assert updated.title == "Actualizada"
     assert updated.priority == "Alta"
+    assert updated.assignee == "Vale"
     assert updated.due_date == "2026-05-10"
     assert updated.notes == "Ahora con detalle ampliado"
 
@@ -128,6 +132,7 @@ def test_duplicate_task_creates_new_copy_with_new_id(tmp_path: Path) -> None:
     original = repository.add_task(
         "Preparar demo",
         priority="Alta",
+        assignee="Ana",
         due_date="2026-06-10",
         notes="Con datos reales",
     )
@@ -139,6 +144,7 @@ def test_duplicate_task_creates_new_copy_with_new_id(tmp_path: Path) -> None:
     assert duplicated.task_id == 2
     assert duplicated.title == "Copia de Preparar demo"
     assert duplicated.priority == "Alta"
+    assert duplicated.assignee == "Ana"
     assert duplicated.due_date == "2026-06-10"
     assert duplicated.notes == "Con datos reales"
     assert [task.task_id for task in tasks] == [1, 2]
@@ -148,3 +154,13 @@ def test_duplicate_task_returns_none_for_unknown_id(tmp_path: Path) -> None:
     repository = TaskRepository(tmp_path / "tasks.json")
 
     assert repository.duplicate_task(999) is None
+
+
+def test_list_assignees_returns_unique_sorted_names(tmp_path: Path) -> None:
+    repository = TaskRepository(tmp_path / "tasks.json")
+    repository.add_task("A", assignee="Nico")
+    repository.add_task("B", assignee="ana")
+    repository.add_task("C", assignee="Nico")
+    repository.add_task("D")
+
+    assert repository.list_assignees() == ["ana", "Nico"]

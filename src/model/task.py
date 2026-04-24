@@ -7,6 +7,7 @@ class Task:
     title: str
     completed: bool = False
     priority: str = "Media"
+    assignee: str = ""
     due_date: str = ""
     notes: str = ""
 
@@ -20,6 +21,7 @@ class Task:
             title=str(data["title"]),
             completed=bool(data.get("completed", False)),
             priority=str(data.get("priority", "Media")),
+            assignee=str(data.get("assignee", "")),
             due_date=str(data.get("due_date", "")),
             notes=str(data.get("notes", "")),
         )
