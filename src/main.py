@@ -29,12 +29,24 @@ def build_settings_path() -> Path:
     return project_root / "storage" / "settings.json"
 
 
+def build_drive_storage_path(sync_folder: str) -> Path:
+    return Path(sync_folder) / "TaskFlowMDV" / "tasks.json"
+
+
 def main() -> None:
     configure_logging(build_log_path())
     logger = logging.getLogger(__name__)
-    repository = TaskRepository(build_storage_path())
     settings_repository = SettingsRepository(build_settings_path())
-    view = TaskManagerView(repository, settings_repository=settings_repository, logger=logger)
+    local_storage_path = build_storage_path()
+    sync_folder = settings_repository.load_sync_folder()
+    storage_path = build_drive_storage_path(sync_folder) if sync_folder else local_storage_path
+    repository = TaskRepository(storage_path)
+    view = TaskManagerView(
+        repository,
+        settings_repository=settings_repository,
+        local_storage_path=local_storage_path,
+        logger=logger,
+    )
     logger.info("Aplicacion iniciada")
     view.run()
 

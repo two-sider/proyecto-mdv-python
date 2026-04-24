@@ -7,6 +7,10 @@ from src.model.task import Task
 class TaskRepository:
     def __init__(self, storage_path: Path) -> None:
         self.storage_path = storage_path
+        self.set_storage_path(storage_path)
+
+    def set_storage_path(self, storage_path: Path) -> None:
+        self.storage_path = storage_path
         self.storage_path.parent.mkdir(parents=True, exist_ok=True)
         if not self.storage_path.exists():
             self._write([])

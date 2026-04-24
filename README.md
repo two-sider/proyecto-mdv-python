@@ -11,6 +11,7 @@ Aplicacion de escritorio en Python para gestion de tareas, construida con arquit
 - selector de tema con modos `clara`, `oscura` y `blue-coding`
 - exportacion e importacion de tareas en JSON
 - duplicado rapido de tareas y reinicio de filtros
+- sincronizacion opcional con carpeta de Google Drive
 - persistencia local en JSON
 - logs en archivo
 - ejecutable para Windows con `PyInstaller`
@@ -26,6 +27,7 @@ La interfaz actual incluye:
 - selector de tema con variantes `clara`, `oscura` y `blue-coding`
 - acciones de respaldo y restauracion de tareas
 - boton para limpiar filtros y duplicar tareas existentes
+- conexion opcional a una carpeta sincronizada de Google Drive
 
 ## Capturas reales
 
@@ -101,13 +103,15 @@ La aplicacion guarda datos locales en:
 
 Tambien puedes exportar e importar respaldos JSON desde la interfaz.
 
+Si usas Google Drive para escritorio, puedes elegir una carpeta sincronizada y la app guardara ahi el archivo principal de tareas.
+
 ## Versiones
 
 El historial funcional y la numeracion de versiones se documentan en [VERSIONES.md](C:\Users\x13\proyecto-mdv-python\VERSIONES.md).
 
 Version actual:
 
-- `0.3.1`
+- `0.4.0`
 
 ## Seguridad
 

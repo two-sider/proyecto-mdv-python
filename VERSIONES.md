@@ -12,9 +12,18 @@ Se usara el formato `MAJOR.MINOR.PATCH`.
 
 ## Version actual
 
-`0.3.1`
+`0.4.0`
 
 ## Historial
+
+### `0.4.0` - Sincronizacion con Google Drive
+
+Incluye:
+
+- seleccion de carpeta sincronizada de Google Drive desde la interfaz
+- uso de `tasks.json` dentro de Google Drive como almacenamiento principal
+- opcion para volver al almacenamiento local sin perder las tareas actuales
+- persistencia de la carpeta de sincronizacion en configuracion local
 
 ### `0.3.1` - Ajustes de experiencia de uso
 

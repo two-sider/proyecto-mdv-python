@@ -14,10 +14,12 @@ class TaskManagerView:
         self,
         repository: TaskRepository,
         settings_repository: SettingsRepository,
+        local_storage_path: Path,
         logger: logging.Logger | None = None,
     ) -> None:
         self.repository = repository
         self.settings_repository = settings_repository
+        self.local_storage_path = local_storage_path
         self.logger = logger or logging.getLogger(__name__)
         self.root = tk.Tk()
         self.root.title("TaskFlow MDV")
@@ -32,6 +34,8 @@ class TaskManagerView:
         self.filter_var = tk.StringVar(value="Todas")
         self.search_var = tk.StringVar()
         self.sort_var = tk.StringVar(value="Fecha de creacion")
+        self.sync_folder_var = tk.StringVar()
+        self.sync_status_var = tk.StringVar()
         self.status_var = tk.StringVar(value="Sin seleccion. Crea o elige una tarea para ver su detalle.")
         self.detail_title_var = tk.StringVar(value="Sin tarea seleccionada")
         self.detail_priority_var = tk.StringVar(value="Prioridad: -")
@@ -47,6 +51,7 @@ class TaskManagerView:
         self._configure_styles()
         self._build_layout()
         self._apply_theme()
+        self._update_sync_status()
         self._refresh_tasks()
 
     def run(self) -> None:
@@ -412,81 +417,122 @@ class TaskManagerView:
         ttk.Separator(panel, orient="horizontal").grid(
             row=16, column=0, sticky="ew", pady=(18, 10)
         )
-        ttk.Label(panel, text="Datos", style="Section.TLabel").grid(row=17, column=0, sticky="w")
+        ttk.Label(panel, text="Sincronizacion", style="Section.TLabel").grid(row=17, column=0, sticky="w")
+        ttk.Label(
+            panel,
+            text="Usa una carpeta de Google Drive para compartir el mismo archivo entre equipos.",
+            style="Status.TLabel",
+            wraplength=280,
+            justify="left",
+        ).grid(row=18, column=0, sticky="w", pady=(4, 8))
+        ttk.Label(
+            panel,
+            textvariable=self.sync_folder_var,
+            style="Status.TLabel",
+            wraplength=280,
+            justify="left",
+        ).grid(row=19, column=0, sticky="w")
+        ttk.Label(
+            panel,
+            textvariable=self.sync_status_var,
+            style="Status.TLabel",
+            wraplength=280,
+            justify="left",
+        ).grid(row=20, column=0, sticky="w", pady=(4, 12))
+
+        self.connect_drive_button = self._build_action_button(
+            panel,
+            row=21,
+            text="Conectar Google Drive",
+            background="#2563eb",
+            command=self._connect_google_drive_folder,
+        )
+        self.use_local_button = self._build_action_button(
+            panel,
+            row=22,
+            text="Usar almacenamiento local",
+            background="#475569",
+            command=self._use_local_storage,
+        )
+
+        ttk.Separator(panel, orient="horizontal").grid(
+            row=23, column=0, sticky="ew", pady=(18, 10)
+        )
+        ttk.Label(panel, text="Datos", style="Section.TLabel").grid(row=24, column=0, sticky="w")
         ttk.Label(
             panel,
             text="Exporta un respaldo JSON o importa tareas desde otro archivo.",
             style="Status.TLabel",
-        ).grid(row=18, column=0, sticky="w", pady=(4, 12))
+        ).grid(row=25, column=0, sticky="w", pady=(4, 12))
 
         self.export_button = self._build_action_button(
             panel,
-            row=19,
+            row=26,
             text="Exportar tareas",
             background="#146c94",
             command=self._export_tasks,
         )
         self.import_button = self._build_action_button(
             panel,
-            row=20,
+            row=27,
             text="Importar tareas",
             background="#7c5c1d",
             command=self._import_tasks,
         )
 
         ttk.Separator(panel, orient="horizontal").grid(
-            row=21, column=0, sticky="ew", pady=(18, 10)
+            row=28, column=0, sticky="ew", pady=(18, 10)
         )
-        ttk.Label(panel, text="Estado", style="Section.TLabel").grid(row=22, column=0, sticky="w")
+        ttk.Label(panel, text="Estado", style="Section.TLabel").grid(row=29, column=0, sticky="w")
         ttk.Label(
             panel,
             textvariable=self.detail_title_var,
             style="DetailTitle.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=23, column=0, sticky="w", pady=(8, 0))
+        ).grid(row=30, column=0, sticky="w", pady=(8, 0))
         ttk.Label(
             panel,
             textvariable=self.detail_priority_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=24, column=0, sticky="w", pady=(6, 0))
+        ).grid(row=31, column=0, sticky="w", pady=(6, 0))
         ttk.Label(
             panel,
             textvariable=self.detail_due_date_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=25, column=0, sticky="w", pady=(4, 0))
+        ).grid(row=32, column=0, sticky="w", pady=(4, 0))
         ttk.Label(
             panel,
             textvariable=self.detail_completion_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=26, column=0, sticky="w", pady=(4, 0))
+        ).grid(row=33, column=0, sticky="w", pady=(4, 0))
         ttk.Label(
             panel,
             textvariable=self.detail_alert_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=27, column=0, sticky="w", pady=(4, 0))
+        ).grid(row=34, column=0, sticky="w", pady=(4, 0))
         ttk.Label(
             panel,
             textvariable=self.detail_notes_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=28, column=0, sticky="w", pady=(4, 0))
+        ).grid(row=35, column=0, sticky="w", pady=(4, 0))
         ttk.Label(
             panel,
             textvariable=self.status_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=29, column=0, sticky="w", pady=(12, 0))
+        ).grid(row=36, column=0, sticky="w", pady=(12, 0))
 
         self._set_action_state("disabled")
         self.cancel_edit_button.config(state="disabled")
@@ -721,6 +767,82 @@ class TaskManagerView:
         self.search_var.set("")
         self.status_var.set("Filtros reiniciados.")
         self._refresh_tasks()
+
+    def _connect_google_drive_folder(self) -> None:
+        selected_folder = filedialog.askdirectory(
+            parent=self.root,
+            title="Selecciona tu carpeta de Google Drive",
+        )
+        if not selected_folder:
+            self.status_var.set("Conexion con Google Drive cancelada.")
+            return
+
+        sync_storage_path = self._build_sync_storage_path(selected_folder)
+
+        try:
+            current_storage_path = self.repository.storage_path
+            if current_storage_path != sync_storage_path and sync_storage_path.exists():
+                decision = messagebox.askyesnocancel(
+                    "Google Drive detectado",
+                    (
+                        "La carpeta seleccionada ya tiene tareas guardadas.\n"
+                        "Si eliges 'Si', se usaran las tareas de Google Drive.\n"
+                        "Si eliges 'No', las tareas actuales se copiaran a Google Drive."
+                    ),
+                    parent=self.root,
+                )
+                if decision is None:
+                    self.status_var.set("Conexion con Google Drive cancelada.")
+                    return
+                if decision is False:
+                    self.repository.export_tasks(sync_storage_path)
+            elif current_storage_path != sync_storage_path:
+                self.repository.export_tasks(sync_storage_path)
+
+            self.repository.set_storage_path(sync_storage_path)
+            self.settings_repository.save_sync_folder(selected_folder)
+            self._clear_form()
+            self._update_sync_status()
+            self._refresh_tasks()
+            self.logger.info("Sincronizacion Google Drive activada: carpeta=%s", selected_folder)
+            self.status_var.set("Google Drive conectado. Los cambios se guardaran en la carpeta sincronizada.")
+        except Exception as error:
+            self.logger.exception("Error al conectar Google Drive")
+            self.status_var.set(f"Error al conectar Google Drive: {error}")
+
+    def _use_local_storage(self) -> None:
+        current_sync_folder = self.settings_repository.load_sync_folder()
+        if not current_sync_folder and self.repository.storage_path == self.local_storage_path:
+            self.status_var.set("La app ya esta usando almacenamiento local.")
+            return
+
+        try:
+            if self.repository.storage_path != self.local_storage_path:
+                self.repository.export_tasks(self.local_storage_path)
+
+            self.repository.set_storage_path(self.local_storage_path)
+            self.settings_repository.save_sync_folder("")
+            self._clear_form()
+            self._update_sync_status()
+            self._refresh_tasks()
+            self.logger.info("Sincronizacion Google Drive desactivada")
+            self.status_var.set("La app volvio a usar almacenamiento local.")
+        except Exception as error:
+            self.logger.exception("Error al volver a almacenamiento local")
+            self.status_var.set(f"Error al volver a almacenamiento local: {error}")
+
+    def _build_sync_storage_path(self, sync_folder: str) -> Path:
+        return Path(sync_folder) / "TaskFlowMDV" / "tasks.json"
+
+    def _update_sync_status(self) -> None:
+        sync_folder = self.settings_repository.load_sync_folder()
+        if sync_folder:
+            self.sync_folder_var.set(f"Carpeta: {sync_folder}")
+            self.sync_status_var.set("Estado: sincronizacion activa mediante Google Drive.")
+            return
+
+        self.sync_folder_var.set("Carpeta: almacenamiento local del proyecto")
+        self.sync_status_var.set("Estado: sin sincronizacion en la nube.")
 
     def _export_tasks(self) -> None:
         default_name = f"taskflow-backup-{date.today().isoformat()}.json"
@@ -1008,6 +1130,8 @@ class TaskManagerView:
             "Eliminar tarea": tokens["danger_btn"],
             "Duplicar tarea": tokens["secondary_btn"],
             "Cancelar edicion": tokens["neutral_btn"],
+            "Conectar Google Drive": tokens["drive_btn"],
+            "Usar almacenamiento local": tokens["local_btn"],
             "Exportar tareas": tokens["info_btn"],
             "Importar tareas": tokens["import_btn"],
         }
@@ -1049,6 +1173,8 @@ class TaskManagerView:
                 "danger_btn": "#a63c3c",
                 "secondary_btn": "#0f766e",
                 "neutral_btn": "#6b7280",
+                "drive_btn": "#2563eb",
+                "local_btn": "#475569",
                 "info_btn": "#146c94",
                 "import_btn": "#7c5c1d",
                 "button_fg": "#ffffff",
@@ -1091,6 +1217,8 @@ class TaskManagerView:
                 "danger_btn": "#c53030",
                 "secondary_btn": "#0f8b82",
                 "neutral_btn": "#4b5563",
+                "drive_btn": "#3b82f6",
+                "local_btn": "#64748b",
                 "info_btn": "#1d6fa5",
                 "import_btn": "#8c6a1f",
                 "button_fg": "#ffffff",
@@ -1133,6 +1261,8 @@ class TaskManagerView:
                 "danger_btn": "#c94c4c",
                 "secondary_btn": "#139089",
                 "neutral_btn": "#4f6d8a",
+                "drive_btn": "#2b8fff",
+                "local_btn": "#5c728a",
                 "info_btn": "#0f7abf",
                 "import_btn": "#9a741c",
                 "button_fg": "#f4fbff",
