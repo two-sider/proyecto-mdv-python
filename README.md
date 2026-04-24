@@ -96,7 +96,7 @@ python -m src.main
 Para generar el ejecutable de Windows:
 
 ```bash
-python -m PyInstaller --name TaskFlowMDV --windowed --onefile src/main.py
+python -m PyInstaller --clean --noconfirm TaskFlowMDV.spec
 ```
 
 El binario se genera en `dist/`.
