@@ -1,13 +1,17 @@
 import logging
+import threading
 import tkinter as tk
+import webbrowser
 from datetime import date
 from pathlib import Path
 from tkinter import TclError
 from tkinter import filedialog, messagebox, ttk
 
+from src.app_info import APP_VERSION
 from src.data.settings_repository import SettingsRepository
 from src.data.task_repository import TaskRepository
 from src.model.task import Task
+from src.update_checker import ReleaseInfo, fetch_latest_release, is_newer_version
 
 
 class TaskManagerView:
@@ -38,6 +42,9 @@ class TaskManagerView:
         self.sort_var = tk.StringVar(value="Fecha de creacion")
         self.sync_folder_var = tk.StringVar()
         self.sync_status_var = tk.StringVar()
+        self.current_version_var = tk.StringVar(value=f"Version actual: {APP_VERSION}")
+        self.latest_version_var = tk.StringVar(value="Ultima version: comprobando...")
+        self.update_status_var = tk.StringVar(value="Estado: sin comprobacion todavia.")
         self.status_var = tk.StringVar(value="Sin seleccion. Crea o elige una tarea para ver su detalle.")
         self.detail_title_var = tk.StringVar(value="Sin tarea seleccionada")
         self.detail_priority_var = tk.StringVar(value="Prioridad: -")
@@ -51,6 +58,10 @@ class TaskManagerView:
         self.completed_var = tk.StringVar()
         self.theme_tokens = self._get_theme_tokens(self.theme_var.get())
         self.last_known_storage_signature: tuple[float, int] | None = None
+        self.latest_release_url = ""
+        self.latest_release_version = APP_VERSION
+        self.update_check_in_progress = False
+        self.update_prompted_version = ""
 
         self._configure_styles()
         self._build_layout()
@@ -58,6 +69,7 @@ class TaskManagerView:
         self._update_sync_status()
         self._refresh_tasks()
         self._schedule_storage_watch()
+        self.root.after(1200, self._check_updates_on_start)
 
     def run(self) -> None:
         self.root.mainloop()
@@ -481,95 +493,137 @@ class TaskManagerView:
         ttk.Separator(panel, orient="horizontal").grid(
             row=23, column=0, sticky="ew", pady=(18, 10)
         )
-        ttk.Label(panel, text="Datos", style="Section.TLabel").grid(row=24, column=0, sticky="w")
+        ttk.Label(panel, text="Actualizaciones", style="Section.TLabel").grid(row=24, column=0, sticky="w")
+        ttk.Label(
+            panel,
+            textvariable=self.current_version_var,
+            style="Status.TLabel",
+            wraplength=280,
+            justify="left",
+        ).grid(row=25, column=0, sticky="w")
+        ttk.Label(
+            panel,
+            textvariable=self.latest_version_var,
+            style="Status.TLabel",
+            wraplength=280,
+            justify="left",
+        ).grid(row=26, column=0, sticky="w", pady=(4, 0))
+        ttk.Label(
+            panel,
+            textvariable=self.update_status_var,
+            style="Status.TLabel",
+            wraplength=280,
+            justify="left",
+        ).grid(row=27, column=0, sticky="w", pady=(4, 12))
+
+        self.check_updates_button = self._build_action_button(
+            panel,
+            row=28,
+            text="Buscar actualizaciones",
+            background="#7c3aed",
+            command=self._check_updates_manually,
+        )
+        self.download_update_button = self._build_action_button(
+            panel,
+            row=29,
+            text="Descargar actualizacion",
+            background="#0f766e",
+            command=self._open_latest_release,
+        )
+        self.download_update_button.config(state="disabled")
+
+        ttk.Separator(panel, orient="horizontal").grid(
+            row=30, column=0, sticky="ew", pady=(18, 10)
+        )
+        ttk.Label(panel, text="Datos", style="Section.TLabel").grid(row=31, column=0, sticky="w")
         ttk.Label(
             panel,
             text="Exporta un respaldo JSON o importa tareas desde otro archivo.",
             style="Status.TLabel",
-        ).grid(row=25, column=0, sticky="w", pady=(4, 12))
+        ).grid(row=32, column=0, sticky="w", pady=(4, 12))
 
         self.export_button = self._build_action_button(
             panel,
-            row=26,
+            row=33,
             text="Exportar tareas",
             background="#146c94",
             command=self._export_tasks,
         )
         self.import_button = self._build_action_button(
             panel,
-            row=27,
+            row=34,
             text="Importar tareas",
             background="#7c5c1d",
             command=self._import_tasks,
         )
         self.reload_button = self._build_action_button(
             panel,
-            row=28,
+            row=35,
             text="Recargar archivo",
             background="#7c3aed",
             command=self._reload_tasks_from_storage,
         )
 
         ttk.Separator(panel, orient="horizontal").grid(
-            row=29, column=0, sticky="ew", pady=(18, 10)
+            row=36, column=0, sticky="ew", pady=(18, 10)
         )
-        ttk.Label(panel, text="Estado", style="Section.TLabel").grid(row=30, column=0, sticky="w")
+        ttk.Label(panel, text="Estado", style="Section.TLabel").grid(row=37, column=0, sticky="w")
         ttk.Label(
             panel,
             textvariable=self.detail_title_var,
             style="DetailTitle.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=31, column=0, sticky="w", pady=(8, 0))
+        ).grid(row=38, column=0, sticky="w", pady=(8, 0))
         ttk.Label(
             panel,
             textvariable=self.detail_priority_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=32, column=0, sticky="w", pady=(6, 0))
+        ).grid(row=39, column=0, sticky="w", pady=(6, 0))
         ttk.Label(
             panel,
             textvariable=self.detail_assignee_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=33, column=0, sticky="w", pady=(4, 0))
+        ).grid(row=40, column=0, sticky="w", pady=(4, 0))
         ttk.Label(
             panel,
             textvariable=self.detail_due_date_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=34, column=0, sticky="w", pady=(4, 0))
+        ).grid(row=41, column=0, sticky="w", pady=(4, 0))
         ttk.Label(
             panel,
             textvariable=self.detail_completion_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=35, column=0, sticky="w", pady=(4, 0))
+        ).grid(row=42, column=0, sticky="w", pady=(4, 0))
         ttk.Label(
             panel,
             textvariable=self.detail_alert_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=36, column=0, sticky="w", pady=(4, 0))
+        ).grid(row=43, column=0, sticky="w", pady=(4, 0))
         ttk.Label(
             panel,
             textvariable=self.detail_notes_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=37, column=0, sticky="w", pady=(4, 0))
+        ).grid(row=44, column=0, sticky="w", pady=(4, 0))
         ttk.Label(
             panel,
             textvariable=self.status_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=38, column=0, sticky="w", pady=(12, 0))
+        ).grid(row=45, column=0, sticky="w", pady=(12, 0))
 
         self._set_action_state("disabled")
         self.cancel_edit_button.config(state="disabled")
@@ -817,6 +871,83 @@ class TaskManagerView:
         self._refresh_tasks()
         if not silent:
             self.status_var.set("Archivo recargado desde almacenamiento.")
+
+    def _check_updates_on_start(self) -> None:
+        self._start_update_check(manual=False)
+
+    def _check_updates_manually(self) -> None:
+        self._start_update_check(manual=True)
+
+    def _start_update_check(self, manual: bool) -> None:
+        if self.update_check_in_progress:
+            if manual:
+                self.status_var.set("La comprobacion de actualizaciones ya esta en curso.")
+            return
+
+        self.update_check_in_progress = True
+        self.check_updates_button.config(state="disabled")
+        self.update_status_var.set("Estado: buscando nuevas versiones...")
+        thread = threading.Thread(
+            target=self._run_update_check,
+            kwargs={"manual": manual},
+            daemon=True,
+        )
+        thread.start()
+
+    def _run_update_check(self, manual: bool) -> None:
+        try:
+            release = fetch_latest_release()
+            self.root.after(0, lambda: self._handle_update_check_success(release, manual))
+        except Exception as error:
+            self.root.after(0, lambda: self._handle_update_check_error(error, manual))
+
+    def _handle_update_check_success(self, release: ReleaseInfo, manual: bool) -> None:
+        self.update_check_in_progress = False
+        self.check_updates_button.config(state="normal")
+        self.latest_release_url = release.url
+        self.latest_release_version = release.version
+        self.latest_version_var.set(f"Ultima version: {release.version}")
+
+        if is_newer_version(APP_VERSION, release.version):
+            self.download_update_button.config(state="normal")
+            self.update_status_var.set("Estado: hay una nueva version disponible.")
+            self.logger.info("Nueva version detectada: actual=%s nueva=%s", APP_VERSION, release.version)
+            if self.update_prompted_version != release.version:
+                self.update_prompted_version = release.version
+                open_release = messagebox.askyesno(
+                    "Actualizacion disponible",
+                    (
+                        f"Tu version actual es {APP_VERSION}.\n"
+                        f"Hay una nueva version disponible: {release.version}.\n\n"
+                        "Quieres abrir la pagina de descarga?"
+                    ),
+                    parent=self.root,
+                )
+                if open_release:
+                    self._open_latest_release()
+            return
+
+        self.download_update_button.config(state="disabled")
+        self.update_status_var.set("Estado: ya tienes la version mas reciente.")
+        if manual:
+            self.status_var.set("No hay actualizaciones disponibles.")
+
+    def _handle_update_check_error(self, error: Exception, manual: bool) -> None:
+        self.update_check_in_progress = False
+        self.check_updates_button.config(state="normal")
+        self.latest_version_var.set("Ultima version: no disponible")
+        self.update_status_var.set("Estado: no se pudo comprobar actualizaciones.")
+        self.logger.warning("No se pudo comprobar actualizaciones: %s", error)
+        if manual:
+            self.status_var.set(f"No se pudo comprobar actualizaciones: {error}")
+
+    def _open_latest_release(self) -> None:
+        if not self.latest_release_url:
+            self.status_var.set("Primero debes comprobar si hay una version nueva.")
+            return
+
+        webbrowser.open(self.latest_release_url)
+        self.status_var.set("Se abrio la pagina de descarga de la ultima release.")
 
     def _connect_google_drive_folder(self) -> None:
         selected_folder = filedialog.askdirectory(
@@ -1225,6 +1356,8 @@ class TaskManagerView:
             "Exportar tareas": tokens["info_btn"],
             "Importar tareas": tokens["import_btn"],
             "Recargar archivo": tokens["reload_btn"],
+            "Buscar actualizaciones": tokens["update_btn"],
+            "Descargar actualizacion": tokens["secondary_btn"],
         }
         background = palette.get(button_text, tokens["accent"])
         button.configure(
@@ -1269,6 +1402,7 @@ class TaskManagerView:
                 "info_btn": "#146c94",
                 "import_btn": "#7c5c1d",
                 "reload_btn": "#7c3aed",
+                "update_btn": "#7c3aed",
                 "button_fg": "#ffffff",
                 "button_disabled_fg": "#e7ded0",
                 "overdue_bg": "#f8d7da",
@@ -1314,6 +1448,7 @@ class TaskManagerView:
                 "info_btn": "#1d6fa5",
                 "import_btn": "#8c6a1f",
                 "reload_btn": "#8b5cf6",
+                "update_btn": "#8b5cf6",
                 "button_fg": "#ffffff",
                 "button_disabled_fg": "#b4c0ca",
                 "overdue_bg": "#5a1f26",
@@ -1359,6 +1494,7 @@ class TaskManagerView:
                 "info_btn": "#0f7abf",
                 "import_btn": "#9a741c",
                 "reload_btn": "#8b5cf6",
+                "update_btn": "#8b5cf6",
                 "button_fg": "#f4fbff",
                 "button_disabled_fg": "#afc8da",
                 "overdue_bg": "#4e2131",

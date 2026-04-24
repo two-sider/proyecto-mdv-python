@@ -12,9 +12,18 @@ Se usara el formato `MAJOR.MINOR.PATCH`.
 
 ## Version actual
 
-`0.5.0`
+`0.6.0`
 
 ## Historial
+
+### `0.6.0` - Comprobacion de actualizaciones
+
+Incluye:
+
+- verificacion de la ultima release disponible en GitHub al iniciar la app
+- boton manual para buscar actualizaciones desde la interfaz
+- acceso directo a la descarga de la ultima version publicada
+- logica de comparacion de versiones sin dependencias externas
 
 ### `0.5.0` - Responsables y recarga externa
 

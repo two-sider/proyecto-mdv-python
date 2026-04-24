@@ -13,6 +13,7 @@ Aplicacion de escritorio en Python para gestion de tareas, construida con arquit
 - duplicado rapido de tareas y reinicio de filtros
 - sincronizacion opcional con carpeta de Google Drive
 - recarga manual y actualizacion automatica ante cambios externos del archivo
+- deteccion de nuevas versiones desde GitHub al iniciar y desde la interfaz
 - persistencia local en JSON
 - logs en archivo
 - ejecutable para Windows con `PyInstaller`
@@ -30,6 +31,7 @@ La interfaz actual incluye:
 - boton para limpiar filtros y duplicar tareas existentes
 - conexion opcional a una carpeta sincronizada de Google Drive
 - recarga del archivo cuando hay cambios desde fuera de la app
+- seccion de actualizaciones con acceso directo a la ultima release
 
 ## Capturas reales
 
@@ -113,7 +115,7 @@ El historial funcional y la numeracion de versiones se documentan en [VERSIONES.
 
 Version actual:
 
-- `0.5.0`
+- `0.6.0`
 
 ## Seguridad
 
@@ -146,3 +148,4 @@ python -m pytest -q
 - ampliar configuraciones de usuario
 - agregar categorias o etiquetas
 - historial de cambios por tarea
+- conflicto de edicion cuando una tarea cambia en dos equipos
