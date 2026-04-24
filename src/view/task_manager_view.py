@@ -28,8 +28,8 @@ class TaskManagerView:
         self.logger = logger or logging.getLogger(__name__)
         self.root = tk.Tk()
         self.root.title("TaskFlow MDV")
-        self.root.geometry("980x640")
-        self.root.minsize(900, 560)
+        self.root.geometry("1160x760")
+        self.root.minsize(1020, 640)
 
         self.editing_task_id: int | None = None
         self.theme_var = tk.StringVar(value=self.settings_repository.load_theme())
@@ -42,9 +42,11 @@ class TaskManagerView:
         self.sort_var = tk.StringVar(value="Fecha de creacion")
         self.sync_folder_var = tk.StringVar()
         self.sync_status_var = tk.StringVar()
+        self.sync_summary_var = tk.StringVar(value="Sync local")
         self.current_version_var = tk.StringVar(value=f"Version actual: {APP_VERSION}")
         self.latest_version_var = tk.StringVar(value="Ultima version: comprobando...")
         self.update_status_var = tk.StringVar(value="Estado: sin comprobacion todavia.")
+        self.update_summary_var = tk.StringVar(value="Updates pendientes")
         self.status_var = tk.StringVar(value="Sin seleccion. Crea o elige una tarea para ver su detalle.")
         self.detail_title_var = tk.StringVar(value="Sin tarea seleccionada")
         self.detail_priority_var = tk.StringVar(value="Prioridad: -")
@@ -78,53 +80,75 @@ class TaskManagerView:
         style = ttk.Style()
         self.style = style
         style.theme_use("clam")
-        style.configure("Heading.TLabel", font=("Segoe UI Semibold", 24))
-        style.configure("Subheading.TLabel", font=("Segoe UI", 11))
-        style.configure("CardTitle.TLabel", font=("Segoe UI", 10))
-        style.configure("CardValue.TLabel", font=("Segoe UI Semibold", 20))
+        style.configure("Heading.TLabel", font=("Segoe UI Semibold", 26))
+        style.configure("Subheading.TLabel", font=("Segoe UI Semibold", 9))
+        style.configure("HeroBody.TLabel", font=("Segoe UI", 11))
+        style.configure("HeroMeta.TLabel", font=("Segoe UI", 9))
+        style.configure("Meta.TLabel", font=("Segoe UI", 9))
+        style.configure("Field.TLabel", font=("Segoe UI Semibold", 9))
+        style.configure("CardTitle.TLabel", font=("Segoe UI Semibold", 9))
+        style.configure("CardValue.TLabel", font=("Segoe UI Semibold", 22))
         style.configure("Section.TLabel", font=("Segoe UI Semibold", 12))
         style.configure("Status.TLabel", font=("Segoe UI", 10))
-        style.configure("DetailTitle.TLabel", font=("Segoe UI Semibold", 14))
-        style.configure("Treeview", rowheight=32, font=("Segoe UI", 10))
+        style.configure("DetailTitle.TLabel", font=("Segoe UI Semibold", 15))
+        style.configure("Pill.TLabel", font=("Segoe UI Semibold", 9))
+        style.configure("Treeview", rowheight=38, font=("Segoe UI", 10))
         style.configure("Treeview.Heading", font=("Segoe UI Semibold", 10))
 
     def _build_layout(self) -> None:
-        container = ttk.Frame(self.root, style="App.TFrame", padding=20)
+        container = ttk.Frame(self.root, style="App.TFrame", padding=24)
         container.pack(fill="both", expand=True)
         container.columnconfigure(0, weight=3)
         container.columnconfigure(1, weight=2)
         container.rowconfigure(1, weight=1)
 
-        header = ttk.Frame(container, style="App.TFrame")
+        header = ttk.Frame(container, style="Hero.TFrame", padding=22)
         header.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 18))
         header.columnconfigure(0, weight=1)
+        header.columnconfigure(1, weight=0)
 
         ttk.Label(header, text="TaskFlow MDV", style="Heading.TLabel").grid(
             row=0, column=0, sticky="w"
         )
         ttk.Label(
             header,
-            text="Gestion visual de tareas con persistencia local en JSON.",
-            style="Subheading.TLabel",
+            text="Organiza tareas, responsables y vencimientos con una interfaz mas clara, enfocada y sincronizable.",
+            style="HeroBody.TLabel",
         ).grid(row=1, column=0, sticky="w", pady=(4, 0))
         ttk.Label(
             header,
-            text="Las incidencias y errores se registran en logs/taskflow.log.",
-            style="Subheading.TLabel",
-        ).grid(row=2, column=0, sticky="w", pady=(4, 0))
-        theme_frame = ttk.Frame(header, style="App.TFrame")
-        theme_frame.grid(row=0, column=1, rowspan=3, sticky="e")
-        ttk.Label(theme_frame, text="Tema", style="Subheading.TLabel").grid(
-            row=0, column=0, sticky="e", padx=(0, 8)
+            text="Trabaja con JSON local, Google Drive, recarga externa y releases desde GitHub sin salir de la misma vista.",
+            style="HeroMeta.TLabel",
+        ).grid(row=2, column=0, sticky="w", pady=(6, 0))
+
+        pills = ttk.Frame(header, style="Hero.TFrame")
+        pills.grid(row=3, column=0, sticky="w", pady=(14, 0))
+        ttk.Label(pills, text=f"Version {APP_VERSION}", style="Pill.TLabel").grid(row=0, column=0, sticky="w")
+        ttk.Label(pills, textvariable=self.sync_summary_var, style="Pill.TLabel").grid(
+            row=0, column=1, sticky="w", padx=(10, 0)
         )
+        ttk.Label(pills, textvariable=self.update_summary_var, style="Pill.TLabel").grid(
+            row=0, column=2, sticky="w", padx=(10, 0)
+        )
+
+        theme_frame = ttk.Frame(header, style="HeroInner.TFrame", padding=14)
+        theme_frame.grid(row=0, column=1, rowspan=4, sticky="e", padx=(20, 0))
+        ttk.Label(theme_frame, text="Apariencia", style="Subheading.TLabel").grid(row=0, column=0, sticky="w")
+        ttk.Label(
+            theme_frame,
+            text="Ajusta contraste y tono visual sin tocar tareas ni configuracion.",
+            style="HeroMeta.TLabel",
+            wraplength=220,
+            justify="left",
+        ).grid(row=1, column=0, sticky="w", pady=(4, 10))
         self.theme_combo = ttk.Combobox(
             theme_frame,
             textvariable=self.theme_var,
             values=("clara", "oscura", "blue-coding"),
             state="readonly",
-            width=14,
+            width=18,
         )
-        self.theme_combo.grid(row=0, column=1, sticky="e")
+        self.theme_combo.grid(row=2, column=0, sticky="ew")
         self.theme_combo.bind("<<ComboboxSelected>>", self._handle_theme_change)
 
         content = ttk.Frame(container, style="App.TFrame")
@@ -137,24 +161,31 @@ class TaskManagerView:
         self._build_control_panel(content)
 
     def _build_task_panel(self, parent: ttk.Frame) -> None:
-        panel = ttk.Frame(parent, style="Panel.TFrame", padding=18)
+        panel = ttk.Frame(parent, style="Panel.TFrame", padding=20)
         panel.grid(row=0, column=0, sticky="nsew", padx=(0, 14))
         panel.columnconfigure(0, weight=1)
-        panel.rowconfigure(2, weight=1)
+        panel.rowconfigure(4, weight=1)
+
+        ttk.Label(panel, text="Panel de trabajo", style="Section.TLabel").grid(row=0, column=0, sticky="w")
+        ttk.Label(
+            panel,
+            text="Controla la carga del dia, cambia de vista rapido y mantente orientado mientras recorres la lista.",
+            style="Meta.TLabel",
+        ).grid(row=1, column=0, sticky="w", pady=(4, 14))
 
         cards = ttk.Frame(panel, style="Panel.TFrame")
-        cards.grid(row=0, column=0, sticky="ew", pady=(0, 14))
+        cards.grid(row=2, column=0, sticky="ew", pady=(0, 14))
         cards.columnconfigure((0, 1, 2), weight=1)
 
-        self._build_card(cards, 0, "Total", self.summary_var)
-        self._build_card(cards, 1, "Pendientes", self.pending_var)
-        self._build_card(cards, 2, "Completadas", self.completed_var)
+        self._build_card(cards, 0, "Tareas", self.summary_var)
+        self._build_card(cards, 1, "En curso", self.pending_var)
+        self._build_card(cards, 2, "Resueltas", self.completed_var)
 
-        filter_frame = ttk.Frame(panel, style="Panel.TFrame")
-        filter_frame.grid(row=1, column=0, sticky="ew", pady=(0, 12))
-        filter_frame.columnconfigure(4, weight=1)
+        filter_frame = ttk.Frame(panel, style="Toolbar.TFrame", padding=16)
+        filter_frame.grid(row=3, column=0, sticky="ew", pady=(0, 12))
+        filter_frame.columnconfigure(5, weight=1)
 
-        ttk.Label(filter_frame, text="Filtro", style="Status.TLabel").grid(
+        ttk.Label(filter_frame, text="Filtro", style="Field.TLabel").grid(
             row=0, column=0, sticky="w", padx=(0, 10)
         )
         filter_combo = ttk.Combobox(
@@ -162,11 +193,12 @@ class TaskManagerView:
             textvariable=self.filter_var,
             values=("Todas", "Pendientes", "Completadas", "Alta", "Media", "Baja"),
             state="readonly",
+            width=15,
         )
         filter_combo.grid(row=0, column=1, sticky="ew", padx=(0, 10))
         filter_combo.bind("<<ComboboxSelected>>", self._handle_filter_change)
 
-        ttk.Label(filter_frame, text="Ordenar por", style="Status.TLabel").grid(
+        ttk.Label(filter_frame, text="Ordenar por", style="Field.TLabel").grid(
             row=0, column=2, sticky="w", padx=(0, 10)
         )
         sort_combo = ttk.Combobox(
@@ -174,11 +206,12 @@ class TaskManagerView:
             textvariable=self.sort_var,
             values=("Fecha de creacion", "Prioridad", "Responsable", "Vencimiento", "Estado", "Titulo"),
             state="readonly",
+            width=18,
         )
         sort_combo.grid(row=0, column=3, sticky="ew", padx=(0, 10))
         sort_combo.bind("<<ComboboxSelected>>", self._handle_filter_change)
 
-        ttk.Label(filter_frame, text="Buscar", style="Status.TLabel").grid(
+        ttk.Label(filter_frame, text="Buscar", style="Field.TLabel").grid(
             row=0, column=4, sticky="w", padx=(0, 10)
         )
         search_entry = tk.Entry(
@@ -193,7 +226,7 @@ class TaskManagerView:
             highlightbackground="#d4c7b6",
             highlightcolor="#1f3c88",
         )
-        search_entry.grid(row=0, column=5, sticky="ew")
+        search_entry.grid(row=0, column=5, sticky="ew", padx=(0, 10))
         search_entry.bind("<KeyRelease>", self._handle_filter_change)
 
         clear_filters_button = tk.Button(
@@ -210,10 +243,10 @@ class TaskManagerView:
             padx=10,
             pady=8,
         )
-        clear_filters_button.grid(row=0, column=6, sticky="e", padx=(10, 0))
+        clear_filters_button.grid(row=0, column=6, sticky="e")
 
-        table_frame = ttk.Frame(panel, style="Panel.TFrame")
-        table_frame.grid(row=2, column=0, sticky="nsew")
+        table_frame = ttk.Frame(panel, style="TableShell.TFrame", padding=12)
+        table_frame.grid(row=4, column=0, sticky="nsew")
         table_frame.columnconfigure(0, weight=1)
         table_frame.rowconfigure(0, weight=1)
 
@@ -265,41 +298,78 @@ class TaskManagerView:
         outer_panel.grid(row=0, column=1, sticky="nsew")
         outer_panel.columnconfigure(0, weight=1)
         outer_panel.rowconfigure(0, weight=1)
+        self.sidebar_canvases: list[tk.Canvas] = []
+        notebook_shell = ttk.Frame(outer_panel, style="HeroInner.TFrame", padding=8)
+        notebook_shell.grid(row=0, column=0, sticky="nsew")
+        notebook_shell.columnconfigure(0, weight=1)
+        notebook_shell.rowconfigure(0, weight=1)
 
-        self.control_canvas = tk.Canvas(
-            outer_panel,
+        notebook = ttk.Notebook(notebook_shell, style="Sidebar.TNotebook")
+        notebook.grid(row=0, column=0, sticky="nsew")
+
+        task_tab = ttk.Frame(notebook, style="Panel.TFrame")
+        system_tab = ttk.Frame(notebook, style="Panel.TFrame")
+        task_tab.columnconfigure(0, weight=1)
+        task_tab.rowconfigure(0, weight=1)
+        system_tab.columnconfigure(0, weight=1)
+        system_tab.rowconfigure(0, weight=1)
+
+        notebook.add(task_tab, text="Tarea")
+        notebook.add(system_tab, text="Sistema")
+
+        task_panel = self._create_scrollable_panel(task_tab)
+        system_panel = self._create_scrollable_panel(system_tab)
+
+        self._build_task_workspace_panel(task_panel)
+        self._build_system_panel(system_panel)
+
+        self._set_action_state("disabled")
+        self.cancel_edit_button.config(state="disabled")
+
+    def _create_scrollable_panel(self, parent: ttk.Frame) -> ttk.Frame:
+        parent.columnconfigure(0, weight=1)
+        parent.rowconfigure(0, weight=1)
+
+        canvas = tk.Canvas(
+            parent,
             bg="#fffaf2",
             highlightthickness=0,
             bd=0,
         )
-        self.control_canvas.grid(row=0, column=0, sticky="nsew")
+        canvas.grid(row=0, column=0, sticky="nsew")
 
-        scrollbar = ttk.Scrollbar(outer_panel, orient="vertical", command=self.control_canvas.yview)
+        scrollbar = ttk.Scrollbar(parent, orient="vertical", command=canvas.yview)
         scrollbar.grid(row=0, column=1, sticky="ns")
-        self.control_canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.configure(yscrollcommand=scrollbar.set)
 
-        panel = ttk.Frame(self.control_canvas, style="Panel.TFrame", padding=18)
+        panel = ttk.Frame(canvas, style="Panel.TFrame", padding=20)
         panel.columnconfigure(0, weight=1)
 
-        panel_window = self.control_canvas.create_window((0, 0), window=panel, anchor="nw")
+        panel_window = canvas.create_window((0, 0), window=panel, anchor="nw")
         panel.bind(
             "<Configure>",
-            lambda _event: self.control_canvas.configure(scrollregion=self.control_canvas.bbox("all")),
+            lambda _event: canvas.configure(scrollregion=canvas.bbox("all")),
         )
-        self.control_canvas.bind(
+        canvas.bind(
             "<Configure>",
-            lambda event: self.control_canvas.itemconfigure(panel_window, width=event.width),
+            lambda event: canvas.itemconfigure(panel_window, width=event.width),
         )
-        self._bind_mousewheel(self.control_canvas)
+        self._bind_mousewheel(canvas)
+        self.sidebar_canvases.append(canvas)
+        return panel
 
-        ttk.Label(panel, text="Nueva tarea", style="Section.TLabel").grid(
+    def _build_task_workspace_panel(self, panel: ttk.Frame) -> None:
+        ttk.Label(panel, text="Editor de tarea", style="Section.TLabel").grid(
             row=0, column=0, sticky="w"
         )
         ttk.Label(
             panel,
-            text="Escribe una descripcion clara y agregala a la lista.",
-            style="Status.TLabel",
+            text="Crea una tarea nueva o carga una existente para editarla con contexto visible y mejor foco.",
+            style="Meta.TLabel",
         ).grid(row=1, column=0, sticky="w", pady=(4, 10))
+        ttk.Label(panel, text="Titulo", style="Field.TLabel").grid(
+            row=2, column=0, sticky="w", pady=(0, 6)
+        )
 
         entry = tk.Entry(
             panel,
@@ -313,21 +383,21 @@ class TaskManagerView:
             highlightbackground="#d4c7b6",
             highlightcolor="#1f3c88",
         )
-        entry.grid(row=2, column=0, sticky="ew")
+        entry.grid(row=3, column=0, sticky="ew")
         entry.bind("<Return>", self._handle_add_task)
         entry.focus_set()
 
         meta_frame = ttk.Frame(panel, style="Panel.TFrame")
-        meta_frame.grid(row=3, column=0, sticky="ew", pady=(12, 0))
+        meta_frame.grid(row=4, column=0, sticky="ew", pady=(14, 0))
         meta_frame.columnconfigure((0, 1, 2), weight=1)
 
-        ttk.Label(meta_frame, text="Prioridad", style="Status.TLabel").grid(
+        ttk.Label(meta_frame, text="Prioridad", style="Field.TLabel").grid(
             row=0, column=0, sticky="w", padx=(0, 10)
         )
-        ttk.Label(meta_frame, text="Responsable", style="Status.TLabel").grid(
+        ttk.Label(meta_frame, text="Responsable", style="Field.TLabel").grid(
             row=0, column=1, sticky="w", padx=(0, 10)
         )
-        ttk.Label(meta_frame, text="Vence (YYYY-MM-DD)", style="Status.TLabel").grid(
+        ttk.Label(meta_frame, text="Vence (YYYY-MM-DD)", style="Field.TLabel").grid(
             row=0, column=2, sticky="w"
         )
 
@@ -343,6 +413,7 @@ class TaskManagerView:
             meta_frame,
             textvariable=self.assignee_var,
             values=(),
+            width=18,
         )
         self.assignee_combo.grid(row=1, column=1, sticky="ew", padx=(0, 10))
 
@@ -360,8 +431,8 @@ class TaskManagerView:
         )
         due_date_entry.grid(row=1, column=2, sticky="ew")
 
-        ttk.Label(panel, text="Notas", style="Status.TLabel").grid(
-            row=4, column=0, sticky="w", pady=(12, 6)
+        ttk.Label(panel, text="Notas", style="Field.TLabel").grid(
+            row=5, column=0, sticky="w", pady=(14, 6)
         )
         self.notes_text = tk.Text(
             panel,
@@ -376,9 +447,9 @@ class TaskManagerView:
             highlightcolor="#1f3c88",
             wrap="word",
         )
-        self.notes_text.grid(row=5, column=0, sticky="ew")
+        self.notes_text.grid(row=6, column=0, sticky="ew")
 
-        add_button = tk.Button(
+        self.save_button = tk.Button(
             panel,
             text="Guardar tarea",
             command=self._save_task,
@@ -392,140 +463,198 @@ class TaskManagerView:
             padx=12,
             pady=10,
         )
-        add_button.grid(row=6, column=0, sticky="ew", pady=(12, 20))
-        self.save_button = add_button
+        self.save_button.grid(row=7, column=0, sticky="ew", pady=(14, 20))
 
-        ttk.Separator(panel, orient="horizontal").grid(row=7, column=0, sticky="ew", pady=6)
+        ttk.Separator(panel, orient="horizontal").grid(row=8, column=0, sticky="ew", pady=6)
 
         ttk.Label(panel, text="Acciones", style="Section.TLabel").grid(
-            row=8, column=0, sticky="w", pady=(8, 0)
+            row=9, column=0, sticky="w", pady=(8, 0)
         )
         ttk.Label(
             panel,
-            text="Selecciona una tarea de la tabla para operar sobre ella.",
-            style="Status.TLabel",
-        ).grid(row=9, column=0, sticky="w", pady=(4, 12))
+            text="Opera sobre la tarea activa sin perder el hilo. Las opciones cambian segun su estado actual.",
+            style="Meta.TLabel",
+        ).grid(row=10, column=0, sticky="w", pady=(4, 12))
 
         self.edit_button = self._build_action_button(
             panel,
-            row=10,
+            row=11,
             text="Cargar para editar",
             background="#5b4abf",
             command=self._load_selected_task_for_edit,
         )
         self.complete_button = self._build_action_button(
             panel,
-            row=11,
+            row=12,
             text="Marcar como completada",
             background="#2d6a4f",
             command=self._complete_selected_task,
         )
         self.reopen_button = self._build_action_button(
             panel,
-            row=12,
+            row=13,
             text="Reabrir tarea",
             background="#9a6700",
             command=self._reopen_selected_task,
         )
         self.delete_button = self._build_action_button(
             panel,
-            row=13,
+            row=14,
             text="Eliminar tarea",
             background="#a63c3c",
             command=self._delete_selected_task,
         )
         self.duplicate_button = self._build_action_button(
             panel,
-            row=14,
+            row=15,
             text="Duplicar tarea",
             background="#0f766e",
             command=self._duplicate_selected_task,
         )
         self.cancel_edit_button = self._build_action_button(
             panel,
-            row=15,
+            row=16,
             text="Cancelar edicion",
             background="#6b7280",
             command=self._cancel_edit_mode,
         )
 
         ttk.Separator(panel, orient="horizontal").grid(
-            row=16, column=0, sticky="ew", pady=(18, 10)
+            row=17, column=0, sticky="ew", pady=(18, 10)
         )
-        ttk.Label(panel, text="Sincronizacion", style="Section.TLabel").grid(row=17, column=0, sticky="w")
+        ttk.Label(panel, text="Detalle activo", style="Section.TLabel").grid(row=18, column=0, sticky="w")
         ttk.Label(
             panel,
-            text="Usa una carpeta de Google Drive para compartir el mismo archivo entre equipos.",
+            textvariable=self.detail_title_var,
+            style="DetailTitle.TLabel",
+            wraplength=280,
+            justify="left",
+        ).grid(row=19, column=0, sticky="w", pady=(8, 0))
+        ttk.Label(
+            panel,
+            textvariable=self.detail_priority_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=18, column=0, sticky="w", pady=(4, 8))
+        ).grid(row=20, column=0, sticky="w", pady=(6, 0))
+        ttk.Label(
+            panel,
+            textvariable=self.detail_assignee_var,
+            style="Status.TLabel",
+            wraplength=280,
+            justify="left",
+        ).grid(row=21, column=0, sticky="w", pady=(4, 0))
+        ttk.Label(
+            panel,
+            textvariable=self.detail_due_date_var,
+            style="Status.TLabel",
+            wraplength=280,
+            justify="left",
+        ).grid(row=22, column=0, sticky="w", pady=(4, 0))
+        ttk.Label(
+            panel,
+            textvariable=self.detail_completion_var,
+            style="Status.TLabel",
+            wraplength=280,
+            justify="left",
+        ).grid(row=23, column=0, sticky="w", pady=(4, 0))
+        ttk.Label(
+            panel,
+            textvariable=self.detail_alert_var,
+            style="Status.TLabel",
+            wraplength=280,
+            justify="left",
+        ).grid(row=24, column=0, sticky="w", pady=(4, 0))
+        ttk.Label(
+            panel,
+            textvariable=self.detail_notes_var,
+            style="Status.TLabel",
+            wraplength=280,
+            justify="left",
+        ).grid(row=25, column=0, sticky="w", pady=(4, 0))
+        ttk.Label(
+            panel,
+            textvariable=self.status_var,
+            style="Status.TLabel",
+            wraplength=280,
+            justify="left",
+        ).grid(row=26, column=0, sticky="w", pady=(12, 0))
+
+    def _build_system_panel(self, panel: ttk.Frame) -> None:
+        ttk.Label(panel, text="Sincronizacion", style="Section.TLabel").grid(row=0, column=0, sticky="w")
+        ttk.Label(
+            panel,
+            text="Usa una carpeta de Google Drive para compartir el mismo archivo entre equipos.",
+            style="Meta.TLabel",
+            wraplength=280,
+            justify="left",
+        ).grid(row=1, column=0, sticky="w", pady=(4, 8))
         ttk.Label(
             panel,
             textvariable=self.sync_folder_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=19, column=0, sticky="w")
+        ).grid(row=2, column=0, sticky="w")
         ttk.Label(
             panel,
             textvariable=self.sync_status_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=20, column=0, sticky="w", pady=(4, 12))
+        ).grid(row=3, column=0, sticky="w", pady=(4, 12))
 
         self.connect_drive_button = self._build_action_button(
             panel,
-            row=21,
+            row=4,
             text="Conectar Google Drive",
             background="#2563eb",
             command=self._connect_google_drive_folder,
         )
         self.use_local_button = self._build_action_button(
             panel,
-            row=22,
+            row=5,
             text="Usar almacenamiento local",
             background="#475569",
             command=self._use_local_storage,
         )
 
         ttk.Separator(panel, orient="horizontal").grid(
-            row=23, column=0, sticky="ew", pady=(18, 10)
+            row=6, column=0, sticky="ew", pady=(18, 10)
         )
-        ttk.Label(panel, text="Actualizaciones", style="Section.TLabel").grid(row=24, column=0, sticky="w")
+        ttk.Label(panel, text="Actualizaciones", style="Section.TLabel").grid(row=7, column=0, sticky="w")
         ttk.Label(
             panel,
             textvariable=self.current_version_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=25, column=0, sticky="w")
+        ).grid(row=8, column=0, sticky="w")
         ttk.Label(
             panel,
             textvariable=self.latest_version_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=26, column=0, sticky="w", pady=(4, 0))
+        ).grid(row=9, column=0, sticky="w", pady=(4, 0))
         ttk.Label(
             panel,
             textvariable=self.update_status_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=27, column=0, sticky="w", pady=(4, 12))
+        ).grid(row=10, column=0, sticky="w", pady=(4, 12))
 
         self.check_updates_button = self._build_action_button(
             panel,
-            row=28,
+            row=11,
             text="Buscar actualizaciones",
             background="#7c3aed",
             command=self._check_updates_manually,
         )
         self.download_update_button = self._build_action_button(
             panel,
-            row=29,
+            row=12,
             text="Descargar actualizacion",
             background="#0f766e",
             command=self._open_latest_release,
@@ -533,100 +662,36 @@ class TaskManagerView:
         self.download_update_button.config(state="disabled")
 
         ttk.Separator(panel, orient="horizontal").grid(
-            row=30, column=0, sticky="ew", pady=(18, 10)
+            row=13, column=0, sticky="ew", pady=(18, 10)
         )
-        ttk.Label(panel, text="Datos", style="Section.TLabel").grid(row=31, column=0, sticky="w")
+        ttk.Label(panel, text="Datos y respaldo", style="Section.TLabel").grid(row=14, column=0, sticky="w")
         ttk.Label(
             panel,
             text="Exporta un respaldo JSON o importa tareas desde otro archivo.",
-            style="Status.TLabel",
-        ).grid(row=32, column=0, sticky="w", pady=(4, 12))
+            style="Meta.TLabel",
+        ).grid(row=15, column=0, sticky="w", pady=(4, 12))
 
         self.export_button = self._build_action_button(
             panel,
-            row=33,
-            text="Exportar tareas",
+            row=16,
+            text="Crear respaldo JSON",
             background="#146c94",
             command=self._export_tasks,
         )
         self.import_button = self._build_action_button(
             panel,
-            row=34,
-            text="Importar tareas",
+            row=17,
+            text="Restaurar desde JSON",
             background="#7c5c1d",
             command=self._import_tasks,
         )
         self.reload_button = self._build_action_button(
             panel,
-            row=35,
+            row=18,
             text="Recargar archivo",
             background="#7c3aed",
             command=self._reload_tasks_from_storage,
         )
-
-        ttk.Separator(panel, orient="horizontal").grid(
-            row=36, column=0, sticky="ew", pady=(18, 10)
-        )
-        ttk.Label(panel, text="Estado", style="Section.TLabel").grid(row=37, column=0, sticky="w")
-        ttk.Label(
-            panel,
-            textvariable=self.detail_title_var,
-            style="DetailTitle.TLabel",
-            wraplength=280,
-            justify="left",
-        ).grid(row=38, column=0, sticky="w", pady=(8, 0))
-        ttk.Label(
-            panel,
-            textvariable=self.detail_priority_var,
-            style="Status.TLabel",
-            wraplength=280,
-            justify="left",
-        ).grid(row=39, column=0, sticky="w", pady=(6, 0))
-        ttk.Label(
-            panel,
-            textvariable=self.detail_assignee_var,
-            style="Status.TLabel",
-            wraplength=280,
-            justify="left",
-        ).grid(row=40, column=0, sticky="w", pady=(4, 0))
-        ttk.Label(
-            panel,
-            textvariable=self.detail_due_date_var,
-            style="Status.TLabel",
-            wraplength=280,
-            justify="left",
-        ).grid(row=41, column=0, sticky="w", pady=(4, 0))
-        ttk.Label(
-            panel,
-            textvariable=self.detail_completion_var,
-            style="Status.TLabel",
-            wraplength=280,
-            justify="left",
-        ).grid(row=42, column=0, sticky="w", pady=(4, 0))
-        ttk.Label(
-            panel,
-            textvariable=self.detail_alert_var,
-            style="Status.TLabel",
-            wraplength=280,
-            justify="left",
-        ).grid(row=43, column=0, sticky="w", pady=(4, 0))
-        ttk.Label(
-            panel,
-            textvariable=self.detail_notes_var,
-            style="Status.TLabel",
-            wraplength=280,
-            justify="left",
-        ).grid(row=44, column=0, sticky="w", pady=(4, 0))
-        ttk.Label(
-            panel,
-            textvariable=self.status_var,
-            style="Status.TLabel",
-            wraplength=280,
-            justify="left",
-        ).grid(row=45, column=0, sticky="w", pady=(12, 0))
-
-        self._set_action_state("disabled")
-        self.cancel_edit_button.config(state="disabled")
 
     def _bind_mousewheel(self, widget: tk.Widget) -> None:
         widget.bind("<Enter>", lambda _event: self._activate_mousewheel(widget))
@@ -642,7 +707,7 @@ class TaskManagerView:
         widget.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
     def _build_card(self, parent: ttk.Frame, column: int, label: str, variable: tk.StringVar) -> None:
-        card = ttk.Frame(parent, style="Card.TFrame", padding=16)
+        card = ttk.Frame(parent, style="Card.TFrame", padding=18)
         card.grid(row=0, column=column, sticky="ew", padx=(0 if column == 0 else 10, 0))
         ttk.Label(card, text=label, style="CardTitle.TLabel").pack(anchor="w")
         ttk.Label(card, textvariable=variable, style="CardValue.TLabel").pack(anchor="w", pady=(10, 0))
@@ -667,8 +732,8 @@ class TaskManagerView:
             relief="flat",
             cursor="hand2",
             font=("Segoe UI Semibold", 10),
-            padx=12,
-            pady=10,
+            padx=14,
+            pady=11,
         )
         button.grid(row=row, column=0, sticky="ew", pady=(0, 10))
         return button
@@ -701,6 +766,8 @@ class TaskManagerView:
         self.completed_var.set(str(completed_count))
         self.last_known_storage_signature = self._get_storage_signature()
         self._set_action_state("disabled")
+        if not tasks:
+            self.status_var.set("No hay tareas en esta vista. Prueba cambiar filtros o crea una nueva.")
         if selected_id is not None:
             self._restore_selection(selected_id)
         else:
@@ -911,6 +978,7 @@ class TaskManagerView:
         if is_newer_version(APP_VERSION, release.version):
             self.download_update_button.config(state="normal")
             self.update_status_var.set("Estado: hay una nueva version disponible.")
+            self.update_summary_var.set(f"Update {release.version} disponible")
             self.logger.info("Nueva version detectada: actual=%s nueva=%s", APP_VERSION, release.version)
             if self.update_prompted_version != release.version:
                 self.update_prompted_version = release.version
@@ -929,6 +997,7 @@ class TaskManagerView:
 
         self.download_update_button.config(state="disabled")
         self.update_status_var.set("Estado: ya tienes la version mas reciente.")
+        self.update_summary_var.set("App al dia")
         if manual:
             self.status_var.set("No hay actualizaciones disponibles.")
 
@@ -937,6 +1006,7 @@ class TaskManagerView:
         self.check_updates_button.config(state="normal")
         self.latest_version_var.set("Ultima version: no disponible")
         self.update_status_var.set("Estado: no se pudo comprobar actualizaciones.")
+        self.update_summary_var.set("Updates no disponibles")
         self.logger.warning("No se pudo comprobar actualizaciones: %s", error)
         if manual:
             self.status_var.set(f"No se pudo comprobar actualizaciones: {error}")
@@ -1020,10 +1090,12 @@ class TaskManagerView:
         if sync_folder:
             self.sync_folder_var.set(f"Carpeta: {sync_folder}")
             self.sync_status_var.set("Estado: sincronizacion activa mediante Google Drive.")
+            self.sync_summary_var.set("Sync con Drive")
             return
 
         self.sync_folder_var.set("Carpeta: almacenamiento local del proyecto")
         self.sync_status_var.set("Estado: sin sincronizacion en la nube.")
+        self.sync_summary_var.set("Sync local")
 
     def _refresh_assignee_options(self) -> None:
         assignees = self.repository.list_assignees()
@@ -1280,14 +1352,58 @@ class TaskManagerView:
         self.root.configure(bg=tokens["app_bg"])
         self.style.configure("App.TFrame", background=tokens["app_bg"])
         self.style.configure("Panel.TFrame", background=tokens["panel_bg"])
+        self.style.configure("Hero.TFrame", background=tokens["hero_bg"])
+        self.style.configure("HeroInner.TFrame", background=tokens["hero_inner_bg"])
+        self.style.configure("Toolbar.TFrame", background=tokens["toolbar_bg"])
+        self.style.configure("TableShell.TFrame", background=tokens["table_shell_bg"])
         self.style.configure("Card.TFrame", background=tokens["card_bg"])
-        self.style.configure("Heading.TLabel", background=tokens["app_bg"], foreground=tokens["heading_fg"])
-        self.style.configure("Subheading.TLabel", background=tokens["app_bg"], foreground=tokens["subheading_fg"])
+        self.style.configure("Heading.TLabel", background=tokens["hero_bg"], foreground=tokens["heading_fg"])
+        self.style.configure("HeroBody.TLabel", background=tokens["hero_bg"], foreground=tokens["hero_body_fg"])
+        self.style.configure("HeroMeta.TLabel", background=tokens["hero_bg"], foreground=tokens["hero_meta_fg"])
+        self.style.configure(
+            "Subheading.TLabel",
+            background=tokens["hero_inner_bg"],
+            foreground=tokens["subheading_fg"],
+        )
+        self.style.configure("Meta.TLabel", background=tokens["panel_bg"], foreground=tokens["meta_fg"])
+        self.style.configure("Field.TLabel", background=tokens["toolbar_bg"], foreground=tokens["field_fg"])
         self.style.configure("CardTitle.TLabel", background=tokens["card_bg"], foreground=tokens["card_title_fg"])
         self.style.configure("CardValue.TLabel", background=tokens["card_bg"], foreground=tokens["card_value_fg"])
         self.style.configure("Section.TLabel", background=tokens["panel_bg"], foreground=tokens["section_fg"])
         self.style.configure("Status.TLabel", background=tokens["panel_bg"], foreground=tokens["status_fg"])
         self.style.configure("DetailTitle.TLabel", background=tokens["panel_bg"], foreground=tokens["detail_fg"])
+        self.style.configure(
+            "Sidebar.TNotebook",
+            background=tokens["hero_inner_bg"],
+            borderwidth=0,
+            tabmargins=(0, 0, 0, 10),
+        )
+        self.style.configure(
+            "Sidebar.TNotebook.Tab",
+            background=tokens["pill_bg"],
+            foreground=tokens["meta_fg"],
+            padding=(18, 10),
+            font=("Segoe UI Semibold", 9),
+            borderwidth=0,
+        )
+        self.style.map(
+            "Sidebar.TNotebook.Tab",
+            background=[
+                ("selected", tokens["accent"]),
+                ("active", tokens["table_shell_bg"]),
+            ],
+            foreground=[
+                ("selected", tokens["button_fg"]),
+                ("active", tokens["heading_fg"]),
+            ],
+            expand=[("selected", (0, 0, 0, 0))],
+        )
+        self.style.configure(
+            "Pill.TLabel",
+            background=tokens["pill_bg"],
+            foreground=tokens["pill_fg"],
+            padding=(10, 5),
+        )
         self.style.configure(
             "Treeview",
             background=tokens["tree_bg"],
@@ -1312,7 +1428,8 @@ class TaskManagerView:
         self.tree.tag_configure("priority_high", background=tokens["high_bg"], foreground=tokens["high_fg"])
         self.tree.tag_configure("completed", background=tokens["done_bg"], foreground=tokens["done_fg"])
 
-        self.control_canvas.configure(bg=tokens["panel_bg"])
+        for canvas in getattr(self, "sidebar_canvases", []):
+            canvas.configure(bg=tokens["panel_bg"])
         self.notes_text.configure(
             bg=tokens["input_bg"],
             fg=tokens["input_fg"],
@@ -1353,8 +1470,8 @@ class TaskManagerView:
             "Cancelar edicion": tokens["neutral_btn"],
             "Conectar Google Drive": tokens["drive_btn"],
             "Usar almacenamiento local": tokens["local_btn"],
-            "Exportar tareas": tokens["info_btn"],
-            "Importar tareas": tokens["import_btn"],
+            "Crear respaldo JSON": tokens["info_btn"],
+            "Restaurar desde JSON": tokens["import_btn"],
             "Recargar archivo": tokens["reload_btn"],
             "Buscar actualizaciones": tokens["update_btn"],
             "Descargar actualizacion": tokens["secondary_btn"],
@@ -1373,14 +1490,24 @@ class TaskManagerView:
             "clara": {
                 "app_bg": "#f4efe6",
                 "panel_bg": "#fffaf2",
+                "hero_bg": "#eadfce",
+                "hero_inner_bg": "#fff7ec",
+                "toolbar_bg": "#f7efe4",
+                "table_shell_bg": "#f8f1e7",
                 "card_bg": "#1f3c88",
                 "heading_fg": "#1c1c1c",
+                "hero_body_fg": "#574f47",
+                "hero_meta_fg": "#675d53",
                 "subheading_fg": "#5f5a52",
+                "meta_fg": "#766f66",
+                "field_fg": "#5f584f",
                 "card_title_fg": "#f1f5ff",
                 "card_value_fg": "#ffffff",
                 "section_fg": "#1c1c1c",
                 "status_fg": "#6f665c",
                 "detail_fg": "#1f1f1f",
+                "pill_bg": "#d7cab8",
+                "pill_fg": "#3f362d",
                 "tree_bg": "#fffdf8",
                 "tree_fg": "#1f1f1f",
                 "tree_heading_bg": "#ecdcc7",
@@ -1419,14 +1546,24 @@ class TaskManagerView:
             "oscura": {
                 "app_bg": "#11161b",
                 "panel_bg": "#1b232c",
+                "hero_bg": "#16202a",
+                "hero_inner_bg": "#202b36",
+                "toolbar_bg": "#17202a",
+                "table_shell_bg": "#16202a",
                 "card_bg": "#233041",
                 "heading_fg": "#f2f5f7",
+                "hero_body_fg": "#c1ced8",
+                "hero_meta_fg": "#9fb1bf",
                 "subheading_fg": "#9db0bf",
+                "meta_fg": "#8da0ae",
+                "field_fg": "#b9c6cf",
                 "card_title_fg": "#b9d2ea",
                 "card_value_fg": "#ffffff",
                 "section_fg": "#e7eef4",
                 "status_fg": "#afbcc6",
                 "detail_fg": "#f2f5f7",
+                "pill_bg": "#2b3a49",
+                "pill_fg": "#e8f0f7",
                 "tree_bg": "#182028",
                 "tree_fg": "#ecf2f8",
                 "tree_heading_bg": "#273645",
@@ -1465,14 +1602,24 @@ class TaskManagerView:
             "blue-coding": {
                 "app_bg": "#07111f",
                 "panel_bg": "#0d1b2f",
+                "hero_bg": "#0b1728",
+                "hero_inner_bg": "#13253c",
+                "toolbar_bg": "#0c1d33",
+                "table_shell_bg": "#0a182b",
                 "card_bg": "#12345a",
                 "heading_fg": "#d8f0ff",
+                "hero_body_fg": "#9fd5ef",
+                "hero_meta_fg": "#88bbd4",
                 "subheading_fg": "#7db8d8",
+                "meta_fg": "#73a5c1",
+                "field_fg": "#9ecce3",
                 "card_title_fg": "#8dd7ff",
                 "card_value_fg": "#ecfbff",
                 "section_fg": "#c3ebff",
                 "status_fg": "#8bb8cf",
                 "detail_fg": "#f1fbff",
+                "pill_bg": "#173455",
+                "pill_fg": "#dbf3ff",
                 "tree_bg": "#0a1526",
                 "tree_fg": "#d7f4ff",
                 "tree_heading_bg": "#16304f",

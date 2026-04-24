@@ -12,9 +12,19 @@ Se usara el formato `MAJOR.MINOR.PATCH`.
 
 ## Version actual
 
-`0.6.0`
+`0.7.0`
 
 ## Historial
+
+### `0.7.0` - Refresh visual de interfaz
+
+Incluye:
+
+- nueva cabecera con mejor jerarquia visual y resumen rapido de estado
+- workspace de lista mas claro para filtros, orden y tabla
+- panel lateral reorganizado con separacion entre flujo de tarea y herramientas del sistema
+- selector de pestañas mas claro para alternar entre `Tarea` y `Sistema`
+- refinamiento de estilos, espaciado, tipografia y contraste en los tres temas
 
 ### `0.6.0` - Comprobacion de actualizaciones
 

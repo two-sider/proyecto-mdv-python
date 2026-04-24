@@ -14,6 +14,8 @@ Aplicacion de escritorio en Python para gestion de tareas, construida con arquit
 - sincronizacion opcional con carpeta de Google Drive
 - recarga manual y actualizacion automatica ante cambios externos del archivo
 - deteccion de nuevas versiones desde GitHub al iniciar y desde la interfaz
+- refresh visual del header, workspace y panel lateral
+- panel derecho dividido en pestañas `Tarea` y `Sistema`
 - persistencia local en JSON
 - logs en archivo
 - ejecutable para Windows con `PyInstaller`
@@ -32,6 +34,8 @@ La interfaz actual incluye:
 - conexion opcional a una carpeta sincronizada de Google Drive
 - recarga del archivo cuando hay cambios desde fuera de la app
 - seccion de actualizaciones con acceso directo a la ultima release
+- jerarquia visual mas clara entre cabecera, lista, editor y acciones
+- selector de pestañas mas visible para separar flujo de tarea y configuracion del sistema
 
 ## Capturas reales
 
@@ -115,7 +119,7 @@ El historial funcional y la numeracion de versiones se documentan en [VERSIONES.
 
 Version actual:
 
-- `0.6.0`
+- `0.7.0`
 
 ## Seguridad
 
@@ -144,7 +148,8 @@ python -m pytest -q
 
 ## Roadmap corto
 
-- seguir refinando la experiencia visual
+- cerrar la iteracion visual actual con capturas finales y detalles finos
+- evaluar migracion de la capa `view` desde `tkinter` a `PySide6`
 - ampliar configuraciones de usuario
 - agregar categorias o etiquetas
 - historial de cambios por tarea
