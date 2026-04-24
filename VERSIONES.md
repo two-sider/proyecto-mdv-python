@@ -12,9 +12,18 @@ Se usara el formato `MAJOR.MINOR.PATCH`.
 
 ## Version actual
 
-`0.2.1`
+`0.3.0`
 
 ## Historial
+
+### `0.3.0` - Exportacion e importacion de tareas
+
+Incluye:
+
+- exportacion manual de tareas a archivo JSON desde la interfaz
+- importacion de tareas desde respaldo JSON con opcion de reemplazar o fusionar
+- normalizacion de identificadores al importar para evitar conflictos
+- configuracion de `pytest` para ejecutar la suite en entornos con `Temp` restringido
 
 ### `0.2.1` - Temas configurables
 

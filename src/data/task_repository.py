@@ -94,10 +94,68 @@ class TaskRepository:
                 return task
         return None
 
+    def export_tasks(self, export_path: Path) -> int:
+        tasks = self.list_tasks()
+        export_path.parent.mkdir(parents=True, exist_ok=True)
+        self._write_payload(export_path, [task.to_dict() for task in tasks])
+        return len(tasks)
+
+    def import_tasks(self, import_path: Path, mode: str = "replace") -> int:
+        raw_tasks = self._read_payload(import_path)
+        if not isinstance(raw_tasks, list):
+            raise ValueError("El archivo importado debe contener una lista de tareas.")
+
+        imported_tasks = [Task.from_dict(item) for item in raw_tasks]
+
+        if mode == "replace":
+            tasks_to_save = self._normalize_task_ids(imported_tasks)
+        elif mode == "merge":
+            current_tasks = self.list_tasks()
+            next_id = max((task.task_id for task in current_tasks), default=0) + 1
+            tasks_to_save = current_tasks[:]
+            for task in imported_tasks:
+                tasks_to_save.append(
+                    Task(
+                        task_id=next_id,
+                        title=task.title,
+                        completed=task.completed,
+                        priority=task.priority,
+                        due_date=task.due_date,
+                        notes=task.notes,
+                    )
+                )
+                next_id += 1
+        else:
+            raise ValueError("Modo de importacion no soportado.")
+
+        self._write([task.to_dict() for task in tasks_to_save])
+        return len(imported_tasks)
+
     def _read(self) -> list[dict]:
-        with self.storage_path.open("r", encoding="utf-8") as file:
-            return json.load(file)
+        return self._read_payload(self.storage_path)
 
     def _write(self, payload: list[dict]) -> None:
-        with self.storage_path.open("w", encoding="utf-8") as file:
+        self._write_payload(self.storage_path, payload)
+
+    def _read_payload(self, path: Path) -> list[dict] | dict:
+        with path.open("r", encoding="utf-8") as file:
+            return json.load(file)
+
+    def _write_payload(self, path: Path, payload: list[dict]) -> None:
+        with path.open("w", encoding="utf-8") as file:
             json.dump(payload, file, indent=2, ensure_ascii=False)
+
+    def _normalize_task_ids(self, tasks: list[Task]) -> list[Task]:
+        normalized_tasks: list[Task] = []
+        for index, task in enumerate(tasks, start=1):
+            normalized_tasks.append(
+                Task(
+                    task_id=index,
+                    title=task.title,
+                    completed=task.completed,
+                    priority=task.priority,
+                    due_date=task.due_date,
+                    notes=task.notes,
+                )
+            )
+        return normalized_tasks

@@ -1,7 +1,8 @@
 import logging
 import tkinter as tk
 from datetime import date
-from tkinter import messagebox, ttk
+from pathlib import Path
+from tkinter import filedialog, messagebox, ttk
 
 from src.data.settings_repository import SettingsRepository
 from src.data.task_repository import TaskRepository
@@ -388,56 +389,81 @@ class TaskManagerView:
         ttk.Separator(panel, orient="horizontal").grid(
             row=15, column=0, sticky="ew", pady=(18, 10)
         )
-        ttk.Label(panel, text="Estado", style="Section.TLabel").grid(row=16, column=0, sticky="w")
+        ttk.Label(panel, text="Datos", style="Section.TLabel").grid(row=16, column=0, sticky="w")
+        ttk.Label(
+            panel,
+            text="Exporta un respaldo JSON o importa tareas desde otro archivo.",
+            style="Status.TLabel",
+        ).grid(row=17, column=0, sticky="w", pady=(4, 12))
+
+        self.export_button = self._build_action_button(
+            panel,
+            row=18,
+            text="Exportar tareas",
+            background="#146c94",
+            command=self._export_tasks,
+        )
+        self.import_button = self._build_action_button(
+            panel,
+            row=19,
+            text="Importar tareas",
+            background="#7c5c1d",
+            command=self._import_tasks,
+        )
+
+        ttk.Separator(panel, orient="horizontal").grid(
+            row=20, column=0, sticky="ew", pady=(18, 10)
+        )
+        ttk.Label(panel, text="Estado", style="Section.TLabel").grid(row=21, column=0, sticky="w")
         ttk.Label(
             panel,
             textvariable=self.detail_title_var,
             style="DetailTitle.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=17, column=0, sticky="w", pady=(8, 0))
+        ).grid(row=22, column=0, sticky="w", pady=(8, 0))
         ttk.Label(
             panel,
             textvariable=self.detail_priority_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=18, column=0, sticky="w", pady=(6, 0))
+        ).grid(row=23, column=0, sticky="w", pady=(6, 0))
         ttk.Label(
             panel,
             textvariable=self.detail_due_date_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=19, column=0, sticky="w", pady=(4, 0))
+        ).grid(row=24, column=0, sticky="w", pady=(4, 0))
         ttk.Label(
             panel,
             textvariable=self.detail_completion_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=20, column=0, sticky="w", pady=(4, 0))
+        ).grid(row=25, column=0, sticky="w", pady=(4, 0))
         ttk.Label(
             panel,
             textvariable=self.detail_alert_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=21, column=0, sticky="w", pady=(4, 0))
+        ).grid(row=26, column=0, sticky="w", pady=(4, 0))
         ttk.Label(
             panel,
             textvariable=self.detail_notes_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=22, column=0, sticky="w", pady=(4, 0))
+        ).grid(row=27, column=0, sticky="w", pady=(4, 0))
         ttk.Label(
             panel,
             textvariable=self.status_var,
             style="Status.TLabel",
             wraplength=280,
             justify="left",
-        ).grid(row=23, column=0, sticky="w", pady=(12, 0))
+        ).grid(row=28, column=0, sticky="w", pady=(12, 0))
 
         self._set_action_state("disabled")
         self.cancel_edit_button.config(state="disabled")
@@ -641,6 +667,69 @@ class TaskManagerView:
     def _cancel_edit_mode(self) -> None:
         self._clear_form()
         self.status_var.set("Edicion cancelada.")
+
+    def _export_tasks(self) -> None:
+        default_name = f"taskflow-backup-{date.today().isoformat()}.json"
+        export_target = filedialog.asksaveasfilename(
+            parent=self.root,
+            title="Exportar tareas",
+            defaultextension=".json",
+            initialfile=default_name,
+            filetypes=[("Archivos JSON", "*.json")],
+        )
+        if not export_target:
+            self.status_var.set("Exportacion cancelada.")
+            return
+
+        try:
+            exported_count = self.repository.export_tasks(Path(export_target))
+            self.logger.info("Tareas exportadas: destino=%s cantidad=%s", export_target, exported_count)
+            self.status_var.set(f"Se exportaron {exported_count} tarea(s) a {Path(export_target).name}.")
+        except Exception as error:
+            self.logger.exception("Error al exportar tareas")
+            self.status_var.set(f"Error al exportar las tareas: {error}")
+
+    def _import_tasks(self) -> None:
+        import_source = filedialog.askopenfilename(
+            parent=self.root,
+            title="Importar tareas",
+            filetypes=[("Archivos JSON", "*.json")],
+        )
+        if not import_source:
+            self.status_var.set("Importacion cancelada.")
+            return
+
+        import_mode = messagebox.askyesnocancel(
+            "Importar tareas",
+            (
+                "Si eliges 'Si', la lista actual se reemplazara.\n"
+                "Si eliges 'No', las tareas importadas se agregaran al final."
+            ),
+            parent=self.root,
+        )
+        if import_mode is None:
+            self.status_var.set("Importacion cancelada.")
+            return
+
+        mode = "replace" if import_mode else "merge"
+
+        try:
+            imported_count = self.repository.import_tasks(Path(import_source), mode=mode)
+            self._clear_form()
+            self._refresh_tasks()
+            self.logger.info(
+                "Tareas importadas: origen=%s cantidad=%s modo=%s",
+                import_source,
+                imported_count,
+                mode,
+            )
+            action = "reemplazaron" if mode == "replace" else "agregaron"
+            self.status_var.set(
+                f"Se importaron {imported_count} tarea(s) desde {Path(import_source).name} y se {action} correctamente."
+            )
+        except Exception as error:
+            self.logger.exception("Error al importar tareas")
+            self.status_var.set(f"Error al importar las tareas: {error}")
 
     def _restore_selection(self, task_id: int) -> None:
         item_id = str(task_id)
@@ -863,6 +952,8 @@ class TaskManagerView:
             "Reabrir tarea": tokens["warning_btn"],
             "Eliminar tarea": tokens["danger_btn"],
             "Cancelar edicion": tokens["neutral_btn"],
+            "Exportar tareas": tokens["info_btn"],
+            "Importar tareas": tokens["import_btn"],
         }
         background = palette.get(button_text, tokens["accent"])
         button.configure(
@@ -901,6 +992,8 @@ class TaskManagerView:
                 "warning_btn": "#9a6700",
                 "danger_btn": "#a63c3c",
                 "neutral_btn": "#6b7280",
+                "info_btn": "#146c94",
+                "import_btn": "#7c5c1d",
                 "button_fg": "#ffffff",
                 "button_disabled_fg": "#e7ded0",
                 "overdue_bg": "#f8d7da",
@@ -940,6 +1033,8 @@ class TaskManagerView:
                 "warning_btn": "#b7791f",
                 "danger_btn": "#c53030",
                 "neutral_btn": "#4b5563",
+                "info_btn": "#1d6fa5",
+                "import_btn": "#8c6a1f",
                 "button_fg": "#ffffff",
                 "button_disabled_fg": "#b4c0ca",
                 "overdue_bg": "#5a1f26",
@@ -979,6 +1074,8 @@ class TaskManagerView:
                 "warning_btn": "#bf8b16",
                 "danger_btn": "#c94c4c",
                 "neutral_btn": "#4f6d8a",
+                "info_btn": "#0f7abf",
+                "import_btn": "#9a741c",
                 "button_fg": "#f4fbff",
                 "button_disabled_fg": "#afc8da",
                 "overdue_bg": "#4e2131",

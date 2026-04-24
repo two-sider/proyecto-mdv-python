@@ -9,6 +9,7 @@ Aplicacion de escritorio en Python para gestion de tareas, construida con arquit
 - filtros, busqueda y ordenamiento
 - alertas visuales para tareas vencidas o proximas a vencer
 - selector de tema con modos `clara`, `oscura` y `blue-coding`
+- exportacion e importacion de tareas en JSON
 - persistencia local en JSON
 - logs en archivo
 - ejecutable para Windows con `PyInstaller`
@@ -22,6 +23,7 @@ La interfaz actual incluye:
 - notas por tarea
 - alertas visuales por prioridad y vencimiento
 - selector de tema con variantes `clara`, `oscura` y `blue-coding`
+- acciones de respaldo y restauracion de tareas
 
 ## Capturas reales
 
@@ -95,13 +97,15 @@ La aplicacion guarda datos locales en:
 - `storage/settings.json`: preferencias visuales
 - `logs/taskflow.log`: eventos y errores
 
+Tambien puedes exportar e importar respaldos JSON desde la interfaz.
+
 ## Versiones
 
 El historial funcional y la numeracion de versiones se documentan en [VERSIONES.md](C:\Users\x13\proyecto-mdv-python\VERSIONES.md).
 
 Version actual:
 
-- `0.2.1`
+- `0.3.0`
 
 ## Seguridad
 
@@ -130,6 +134,6 @@ python -m pytest -q
 
 ## Roadmap corto
 
-- mejorar exportacion e importacion de tareas
 - seguir refinando la experiencia visual
 - ampliar configuraciones de usuario
+- agregar categorias o etiquetas

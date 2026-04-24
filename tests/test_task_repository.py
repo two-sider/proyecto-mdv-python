@@ -65,3 +65,59 @@ def test_update_task_changes_main_fields(tmp_path: Path) -> None:
     assert updated.priority == "Alta"
     assert updated.due_date == "2026-05-10"
     assert updated.notes == "Ahora con detalle ampliado"
+
+
+def test_export_tasks_writes_current_payload(tmp_path: Path) -> None:
+    repository = TaskRepository(tmp_path / "tasks.json")
+    repository.add_task("Preparar release", priority="Alta", notes="Exportar respaldo")
+    repository.add_task("Validar UI", priority="Media", due_date="2026-05-15")
+
+    exported_count = repository.export_tasks(tmp_path / "backup" / "tasks-export.json")
+
+    exported_repository = TaskRepository(tmp_path / "backup" / "tasks-export.json")
+    tasks = exported_repository.list_tasks()
+
+    assert exported_count == 2
+    assert [task.title for task in tasks] == ["Preparar release", "Validar UI"]
+
+
+def test_import_tasks_replace_reorders_ids_from_file(tmp_path: Path) -> None:
+    source_repository = TaskRepository(tmp_path / "source.json")
+    imported_task = source_repository.add_task(
+        "Tarea importada",
+        priority="Baja",
+        due_date="2026-06-01",
+        notes="Llega desde backup",
+    )
+    assert imported_task.task_id == 1
+
+    target_repository = TaskRepository(tmp_path / "target.json")
+    target_repository.add_task("Tarea local")
+
+    imported_count = target_repository.import_tasks(tmp_path / "source.json", mode="replace")
+    tasks = target_repository.list_tasks()
+
+    assert imported_count == 1
+    assert len(tasks) == 1
+    assert tasks[0].task_id == 1
+    assert tasks[0].title == "Tarea importada"
+
+
+def test_import_tasks_merge_appends_with_new_ids(tmp_path: Path) -> None:
+    current_repository = TaskRepository(tmp_path / "current.json")
+    current_repository.add_task("Tarea local")
+
+    import_repository = TaskRepository(tmp_path / "import.json")
+    import_repository.add_task("Tarea externa A", priority="Alta")
+    import_repository.add_task("Tarea externa B", priority="Baja")
+
+    imported_count = current_repository.import_tasks(tmp_path / "import.json", mode="merge")
+    tasks = current_repository.list_tasks()
+
+    assert imported_count == 2
+    assert [task.task_id for task in tasks] == [1, 2, 3]
+    assert [task.title for task in tasks] == [
+        "Tarea local",
+        "Tarea externa A",
+        "Tarea externa B",
+    ]
